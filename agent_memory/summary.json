@@ -1,23 +1,25 @@
 {
   "decisions": [
-    "Initialized a git repository in the workflow/ directory.",
-    "Created a .gitignore covering Python build artefacts, virtual environments, test caches, and added tmp/ to ignore the temporary folder.",
-    "Added the remote origin pointing to https://github.com/artydev/CSFlow.git.",
-    "Renamed the default branch from master to main."
+    "Wrote risk analysis report in tmp/copil/risques.md based on source files",
+    "Wrote actions report in tmp/copil/actions.md based on meeting notes",
+    "Wrote COPIL progress report in tmp/copil/rapport_copil.md based on source files",
+    "Wrote escalation note in tmp/copil/note_escalade.md based on source files"
   ],
   "constraints": [
-    "All file operations must use relative paths within the current working directory.",
-    "Reports must be written in French, professional and concise.",
-    "Only cite figures that appear in the source files; no invented numbers.",
-    "Escalation note limited to 10 lines, with specific structure and no invented data.",
-    "Do not include absolute paths such as C:\\temp.",
-    "The project resides on Windows; respect case-insensitive file handling."
+    "All file operations must use relative paths within the current working directory",
+    "Reports must be written in French, professional and concise",
+    "Only cite figures that appear in the source files; no invented numbers",
+    "Risk report must use Markdown table with columns: Risque | Cause | Probabilit\u00E9 | Impact | Action recommand\u00E9e",
+    "Actions report must have sections: D\u00E9cisions, Plan d\u0027actions (table), Points d\u0027attention",
+    "COPIL report must have exact sections: En une phrase, Indicateurs cl\u00E9s, Faits marquants, Risques majeurs, D\u00E9cisions attendues du COPIL, Prochaines \u00E9tapes sur 14 jours",
+    "Escalation note must be max 10 lines, with 2 chiffr\u00E9es sentences, impact, 3 options with avantage/inconv\u00E9nient, and recommendation",
+    "Project resides on Windows; respect case-insensitive file handling"
   ],
   "pending": [
-    "Commit the initial project files (including .gitignore and the COPIL documents) to the repository.",
-    "Run a basic syntax/validation check on the files in tmp/mon-projet to ensure they execute without errors.",
-    "If requested, prepare a security analysis report for tmp/mon-projet."
+    "Run a basic syntax/validation check on the files in tmp/mon-projet",
+    "Prepare a security analysis report for tmp/mon-projet if requested",
+    "Commit the modified agent_memory/conversation.json (currently uncommitted)"
   ],
   "failed_approaches": [],
-  "created_at": "2026-10-18T18:09:54.6081478Z"
+  "created_at": "2026-10-18T18:16:58.2434176Z"
 }

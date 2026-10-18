@@ -1,0 +1,6 @@
+name: Bonjour CSFlow
+description: Affiche un message de bienvenue.
+steps:
+  - id: salut
+    type: log
+    message: "Bonjour CSFlow !"

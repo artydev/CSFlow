@@ -45,6 +45,7 @@ _approval_result: dict = {}
 @eel.expose
 def list_workflows() -> list:
     files = sorted(WORKFLOWS_DIR.glob("*.yaml"))
+    print(f"[EEL] list_workflows : {len(files)} fichiers trouvés", flush=True)
     result = []
     for f in files:
         try:
