@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../csflow.schema.json
 name: Bonjour CSFlow
 description: Affiche un message de bienvenue.
 steps:
