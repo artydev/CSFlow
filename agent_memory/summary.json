@@ -1,0 +1,23 @@
+{
+  "decisions": [
+    "Initialized a git repository in the workflow/ directory.",
+    "Created a .gitignore covering Python build artefacts, virtual environments, test caches, and added tmp/ to ignore the temporary folder.",
+    "Added the remote origin pointing to https://github.com/artydev/CSFlow.git.",
+    "Renamed the default branch from master to main."
+  ],
+  "constraints": [
+    "All file operations must use relative paths within the current working directory.",
+    "Reports must be written in French, professional and concise.",
+    "Only cite figures that appear in the source files; no invented numbers.",
+    "Escalation note limited to 10 lines, with specific structure and no invented data.",
+    "Do not include absolute paths such as C:\\temp.",
+    "The project resides on Windows; respect case-insensitive file handling."
+  ],
+  "pending": [
+    "Commit the initial project files (including .gitignore and the COPIL documents) to the repository.",
+    "Run a basic syntax/validation check on the files in tmp/mon-projet to ensure they execute without errors.",
+    "If requested, prepare a security analysis report for tmp/mon-projet."
+  ],
+  "failed_approaches": [],
+  "created_at": "2026-10-18T18:09:54.6081478Z"
+}
