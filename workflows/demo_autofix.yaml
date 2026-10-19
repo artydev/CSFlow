@@ -28,9 +28,9 @@ steps:
 
   # ── 2. l'exécuter (échec attendu) ───────────────────────────────────────────
   - id: first_run
-    type: shell
+    type: python
     description: Première exécution (doit échouer)
-    cmd: 'python tmp\broken.py'
+    script: 'tmp\broken.py'
     continue_on_error: true
 
   # ── 3. CSAgent corrige (ignoré si le script passait déjà) ───────────────────
@@ -46,12 +46,15 @@ steps:
       Read the file, identify every bug, fix them all, and overwrite the same file.
       Use only relative paths (you can only write inside the current directory).
       Do not add extra comments or explanations — just correct the code.
+      Do NOT run, test or execute anything: Python is not installed on this machine
+      (neither `python` nor `py`). Only use read_file / edit_file / write_file;
+      the workflow re-runs the script itself afterwards.
 
   # ── 4. vérifier la correction ───────────────────────────────────────────────
   - id: verify_run
-    type: shell
+    type: python
     description: Vérification
-    cmd: 'python tmp\broken.py'
+    script: 'tmp\broken.py'
 
   # ── 5. terminé ──────────────────────────────────────────────────────────────
   - id: done

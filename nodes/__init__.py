@@ -30,6 +30,7 @@ def register(*names, params=None, summary=""):
 from . import (   # noqa: E402, F401
     file_node,
     shell_node,
+    python_node,
     http_node,
     agent_node,
     log_node,

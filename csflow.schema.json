@@ -424,6 +424,65 @@
             "additionalProperties": false
           },
           {
+            "title": "python",
+            "type": "object",
+            "properties": {
+              "id": {
+                "description": "identifiant unique de l'étape ; son résultat s'utilise avec {{id.output}}"
+              },
+              "type": {
+                "const": "python",
+                "description": "Exécute un script Python (fichier ou code inline) avec l'interpréteur embarqué : aucun Python à installer."
+              },
+              "description": {
+                "description": "libellé affiché dans l'interface"
+              },
+              "skip_if": {
+                "description": "expression Python ; si elle est vraie, l'étape est ignorée. Ex : \"'{{statut.output}}' != 'ROUGE'\""
+              },
+              "continue_on_error": {
+                "description": "true = le workflow continue même si l'étape échoue",
+                "type": [
+                  "boolean",
+                  "string"
+                ]
+              },
+              "next": {
+                "description": "id de l'étape suivante (défaut : l'étape suivante dans la liste)"
+              },
+              "on_approve": {
+                "description": "human_approval : id de l'étape suivante si approuvé"
+              },
+              "on_reject": {
+                "description": "human_approval : id de l'étape suivante si rejeté"
+              },
+              "script": {
+                "description": "chemin d'un fichier .py (relatif au dossier de travail)"
+              },
+              "code": {
+                "description": "code Python inline (alternative à script)"
+              },
+              "args": {
+                "description": "arguments passés au script (liste YAML ou chaîne)"
+              },
+              "cwd": {
+                "description": "dossier d'exécution (défaut : dossier de travail)"
+              },
+              "timeout": {
+                "description": "secondes avant arrêt du processus (défaut 60)",
+                "type": [
+                  "integer",
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "type"
+            ],
+            "additionalProperties": false
+          },
+          {
             "title": "shell",
             "type": "object",
             "properties": {

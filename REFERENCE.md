@@ -73,6 +73,15 @@ Affiche un message dans la console et dans le log de l'interface.
 - `message` *(obligatoire)* : texte affiché (accepte les {{variables}})
 - `level` : info | success | warn | error (défaut info)
 
+### python
+Exécute un script Python (fichier ou code inline) avec l'interpréteur embarqué : aucun Python à installer.
+
+- `script` : chemin d'un fichier .py (relatif au dossier de travail)
+- `code` : code Python inline (alternative à script)
+- `args` : arguments passés au script (liste YAML ou chaîne)
+- `cwd` : dossier d'exécution (défaut : dossier de travail)
+- `timeout` : secondes avant arrêt du processus (défaut 60)
+
 ### shell
 Exécute une commande shell (cmd.exe sous Windows, bash ailleurs).
 

@@ -128,14 +128,22 @@ h1, h2, h3, p { margin: 0; }
 .grid {
   flex: 1; min-height: 0; display: grid; gap: 12px; padding: 12px;
   grid-template-columns: 16.25rem minmax(26rem, 1fr) 21.25rem;
-  grid-template-rows: minmax(0, 1.3fr) minmax(0, 1fr);
+  grid-template-rows: minmax(0, var(--r1, 56.5fr)) minmax(0, var(--r2, 43.5fr));
 }
 .side   { grid-column: 1; grid-row: 1 / 3; }
 .graph  { grid-column: 2; grid-row: 1; }
 .bottom { grid-column: 2; grid-row: 2; display: grid; gap: 12px; min-height: 0; min-width: 0;
-          grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); }
+          grid-template-columns: minmax(0, var(--c1, 45.5fr)) minmax(0, var(--c2, 54.5fr)); }
+.p-yaml   { grid-column: 1; grid-row: 1; }
+.p-events { grid-column: 2; grid-row: 1; }
 .detail { grid-column: 3; grid-row: 1 / 3; }
 .bottom-tabs { display: none; }
+main.grid.no-detail { grid-template-columns: 16.25rem minmax(0, 1fr); }
+main.grid.no-detail .detail { display: none; }
+.icon-top { flex: none; width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center;
+            background: #1e293b; border: 1px solid #64748b; border-radius: 10px; color: #e2e8f0; }
+.icon-top:hover { background: #334155; }
+.icon-top[aria-pressed="true"] { background: #e2e8f0; color: #0f172a; border-color: #e2e8f0; }
 
 .card {
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--r);
@@ -318,16 +326,42 @@ pre.block {
   font-weight: 600; text-decoration: underline;
 }
 
+/* ── Poignées de redimensionnement et panneau agrandi ──────────────────────── */
+.split { position: relative; z-index: 5; display: flex; align-items: center; justify-content: center;
+         touch-action: none; border-radius: 6px; }
+.split .grip { background: var(--line-ui); border-radius: 3px; transition: background .15s; }
+.split:hover .grip, .split.drag .grip, .split:focus-visible .grip { background: var(--brand); }
+.split-h { grid-column: 2; grid-row: 1; align-self: end; height: 12px; transform: translateY(12px); cursor: row-resize; }
+.split-h .grip { width: 56px; height: 4px; }
+.split-v { grid-column: 1; grid-row: 1; justify-self: end; width: 12px; transform: translateX(12px); cursor: col-resize; }
+.split-v .grip { width: 4px; height: 56px; }
+.split:focus-visible { outline: 3px solid var(--focus); outline-offset: 0; }
+.icon-btn { width: 36px; min-height: 36px; padding: 0; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.icon-btn svg { display: block; pointer-events: none; }
+body.dragging { user-select: none; -webkit-user-select: none; }
+
+.grid.mx-graph .bottom, .grid[class*="mx-"] .split-h { display: none; }
+.grid.mx-graph .graph { grid-row: 1 / 3; }
+.grid.mx-yaml .graph, .grid.mx-events .graph { display: none; }
+.grid.mx-yaml .bottom, .grid.mx-events .bottom { grid-row: 1 / 3; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+.grid.mx-yaml .bottom-tabs, .grid.mx-events .bottom-tabs, .grid[class*="mx-"] .split-v { display: none; }
+.grid.mx-yaml .p-events, .grid.mx-events .p-yaml { display: none; }
+.grid.mx-yaml .p-yaml, .grid.mx-events .p-events { grid-column: 1; grid-row: 1; }
+
 /* ── Écrans moyens : YAML et événements en onglets ─────────────────────────── */
 @media (max-width: 1399px) {
   .grid { grid-template-columns: 15.5rem minmax(26rem, 1fr) 20.5rem; }
+  main.grid.no-detail { grid-template-columns: 15.5rem minmax(0, 1fr); }
   .bottom { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); gap: 8px; }
   .bottom-tabs { display: flex; gap: 6px; }
+  .p-yaml, .p-events { grid-column: auto; grid-row: auto; }
+  .split-v { display: none; }
   .bottom[data-tab="yaml"]   .p-events { display: none; }
   .bottom[data-tab="events"] .p-yaml   { display: none; }
 }
 @media (max-width: 1180px) {
   .grid { grid-template-columns: 14.25rem minmax(24rem, 1fr) 18.75rem; }
+  main.grid.no-detail { grid-template-columns: 14.25rem minmax(0, 1fr); }
   .tagline { display: none; }
   .tab { padding: 8px 8px; font-size: 0.875rem; }
 }
@@ -358,12 +392,12 @@ const { m, mount, redraw } = umai;
 
 // ── Constantes d'affichage ────────────────────────────────────────────────────
 const ICONS = {
-  agent: '🤖', shell: '⚡', file_read: '📄', file_write: '✏️',
+  agent: '🤖', shell: '⚡', python: '🐍', file_read: '📄', file_write: '✏️',
   log: '📝', transform: '⚙️', http_get: '🌐', http_post: '🌐',
   human_approval: '👤', end: '🏁'
 };
 const TYPE_LABEL = {
-  agent: 'Agent CSAgent', shell: 'Commande shell', file_read: 'Lecture de fichier',
+  agent: 'Agent CSAgent', shell: 'Commande shell', python: 'Script Python', file_read: 'Lecture de fichier',
   file_write: 'Écriture de fichier', log: 'Message', transform: 'Transformation',
   http_get: 'Requête GET', http_post: 'Requête POST', human_approval: 'Validation humaine', end: 'Fin'
 };
@@ -377,7 +411,7 @@ const STATUS = {
 };
 const LOG_CLS   = { wf: 'tag-wf', step: 'tag-step', agent: 'tag-agent', tool: 'tag-tool', err: 'tag-err' };
 const LOG_LABEL = { wf: 'wf', step: 'step', agent: 'agent', tool: 'tool', err: 'erreur' };
-const MAIN_PARAM = [['prompt', 'Prompt'], ['cmd', 'Commande'], ['message', 'Message'], ['path', 'Chemin'],
+const MAIN_PARAM = [['prompt', 'Prompt'], ['cmd', 'Commande'], ['script', 'Script'], ['message', 'Message'], ['path', 'Chemin'],
                     ['url', 'URL'], ['expression', 'Expression']];
 
 const clip = (v, n) => { v = String(v == null ? '' : v); return v.length > n ? v.slice(0, n) + '…' : v; };
@@ -554,6 +588,8 @@ const store = {
   follow: true,          // suit l'étape en cours pendant l'exécution
   detailTab: 'details',
   bottomTab: 'events',
+  hideDetail: false,     // panneau de détail (à droite) masqué
+  maxPane: null,         // null | 'graph' | 'yaml' | 'events' (panneau agrandi)
   logLines: [],
   running: false,
   result: '',            // '' | 'done' | 'error'
@@ -562,6 +598,7 @@ const store = {
   graph: null,
 
   async init() {
+    try { devtoolsLocked = !(await eel.dev_mode()()); } catch (_) { /* ancien serveur : on reste verrouillé */ }
     try {
       store.workflows = (await eel.list_workflows()()) || [];
     } catch (err) {
@@ -765,6 +802,7 @@ const headerState = () =>
   store.result === 'error' ? ['error', 'Échec'] :
   store.currentPath        ? ['', 'Prêt'] : ['', 'Aucun workflow'];
 
+const ICON_PANEL = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/></svg>';
 const Header = () => {
   const [cls, label] = headerState();
   return m('header.top',
@@ -773,6 +811,12 @@ const Header = () => {
       m('h1', 'CS', m('span', 'Flow')),
       m('p.tagline', 'Workflows orchestrés en Python, propulsés par CSAgent')),
     m('div.spacer'),
+    m('button.icon-top', {
+      id: 'btn-detail', 'aria-pressed': store.hideDetail ? 'true' : 'false',
+      'aria-label': store.hideDetail ? 'Afficher le panneau de détail' : 'Masquer le panneau de détail',
+      title: store.hideDetail ? 'Afficher le détail de l’étape' : 'Masquer le détail de l’étape',
+      onclick: () => { store.hideDetail = !store.hideDetail; saveLayout(); redraw(); },
+      innerHTML: ICON_PANEL }),
     m('div.pill', { role: 'status', class: cls },
       m('span.dot', { 'aria-hidden': 'true' }), label),
     m('button.btn-primary', {
@@ -856,7 +900,8 @@ const Graph = () => {
         'aria-pressed': store.follow ? 'true' : 'false',
         title: 'Centre le graphe sur l’étape en cours pendant l’exécution',
         onclick: () => { store.follow = !store.follow; redraw(); }
-      }, 'Suivre l’exécution')),
+      }, 'Suivre l’exécution'),
+      MaxBtn('graph')),
     m('div.graph-body', { id: 'graph-body', tabindex: 0, role: 'group',
                           'aria-label': 'Schéma des étapes (la liste des étapes à gauche en est l’équivalent textuel)' },
       g
@@ -982,7 +1027,8 @@ const YamlPanel = () => {
     m('div.card-head',
       m('h2', { id: 'h-yaml' }, 'Éditeur YAML'),
       m('div.grow'),
-      s ? m('span.sync', '● Étape ' + s.id + ' surlignée') : null),
+      s ? m('span.sync', '● Étape ' + s.id + ' surlignée') : null,
+      MaxBtn('yaml')),
     store.yamlText
       ? m('pre.yaml', { id: 'yaml-body', tabindex: 0, 'aria-label': 'Contenu du fichier YAML, en lecture seule',
                         innerHTML: yamlHtml(store.yamlText, s ? s.line_start : 0, s ? s.line_end : 0) })
@@ -1010,14 +1056,127 @@ const EventsPanel = () =>
     m('div.card-head',
       m('h2', { id: 'h-ev' }, 'Événements'),
       m('div.grow'),
-      m('button.chip-btn', { onclick: () => { store.logLines = []; redraw(); } }, 'Tout effacer')),
+      m('button.chip-btn.icon-btn', { id: 'clear-log', onclick: () => { store.logLines = []; redraw(); },
+        'aria-label': 'Effacer tous les événements', title: 'Effacer tous les événements', innerHTML: ICON_TRASH }),
+      MaxBtn('events')),
     m('div.log', { id: 'log-body', role: 'log', tabindex: 0, 'aria-label': 'Journal d’exécution' },
       store.logLines.length ? store.logLines.map((l, i) => LogLine(l, i))
                             : m('p.empty', 'Les événements d’exécution s’afficheront ici.')));
 
+
+// ── Console de développement du navigateur (F12, clic droit › Inspecter) : masquée ──
+// Confort d'usage, pas une protection. Pour la garder : définir CSFLOW_DEBUG=1 avant de lancer l'application.
+let devtoolsLocked = true;
+document.addEventListener('contextmenu', ev => { if (devtoolsLocked) ev.preventDefault(); });
+document.addEventListener('keydown', ev => {
+  if (!devtoolsLocked) return;
+  const k = (ev.key || '').toLowerCase(), ctrl = ev.ctrlKey || ev.metaKey;
+  const devKey = ev.key === 'F12'
+    || (ctrl && ev.shiftKey && (k === 'i' || k === 'j' || k === 'c'))    // Ctrl+Maj+I / J / C
+    || (ctrl && k === 'u')                                               // Ctrl+U : code source
+    || (ev.metaKey && ev.altKey && (k === 'i' || k === 'j' || k === 'c' || k === 'u'));   // macOS
+  if (devKey) { ev.preventDefault(); ev.stopPropagation(); }
+}, true);
+
+// ── Disposition : poignées de redimensionnement, agrandir, mémorisation ──────
+const LAYOUT_KEY = 'csflow.layout.v1';
+const L_DEF = { gr: 0.565, yf: 0.455 };                 // graphe / hauteur ; YAML / largeur
+const L_LIM = { gr: [0.25, 0.8], yf: [0.25, 0.75] };
+const layout = Object.assign({}, L_DEF);
+const clampL = (k, v) => Math.min(L_LIM[k][1], Math.max(L_LIM[k][0], v));
+try {
+  const saved = JSON.parse(localStorage.getItem(LAYOUT_KEY) || 'null');
+  if (saved && saved.hd === true) store.hideDetail = true;
+  if (saved) for (const k of ['gr', 'yf']) if (typeof saved[k] === 'number' && isFinite(saved[k])) layout[k] = clampL(k, saved[k]);
+} catch (_) { /* stockage indisponible : on garde la disposition par défaut */ }
+function saveLayout() { try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(Object.assign({ hd: !!store.hideDetail }, layout))); } catch (_) {} }
+const fr = v => (Math.round(v * 1000) / 10) + 'fr';
+const rowsStyle = () => `--r1:${fr(layout.gr)};--r2:${fr(1 - layout.gr)}`;
+const colsStyle = () => `--c1:${fr(layout.yf)};--c2:${fr(1 - layout.yf)}`;
+const pct = k => Math.round(layout[k] * 100);
+
+// Position du pointeur → part de l'espace (0..1), comme pour une poignée classique
+function fracFromPointer(key, e) {
+  if (key === 'gr') {
+    const a = document.querySelector('.graph').getBoundingClientRect(), b = document.querySelector('.bottom').getBoundingClientRect();
+    const total = b.bottom - a.top - 12;
+    return total > 0 ? (e.clientY - a.top - 6) / total : layout.gr;
+  }
+  const b = document.querySelector('.bottom').getBoundingClientRect();
+  return b.width > 12 ? (e.clientX - b.left - 6) / (b.width - 12) : layout.yf;
+}
+function applyLayout() {                                  // mise à jour directe pendant le glisser (sans redessiner)
+  const g = document.querySelector('main.grid'), b = document.querySelector('.bottom');
+  if (g) g.style.cssText = rowsStyle();
+  if (b) b.style.cssText = colsStyle();
+  document.querySelectorAll('.split').forEach(el => {
+    const k = el.getAttribute('data-key'); el.setAttribute('aria-valuenow', String(pct(k)));
+    el.setAttribute('aria-valuetext', splitText(k));
+  });
+}
+const splitText = k => k === 'gr' ? `Graphe : ${pct(k)} % de la hauteur` : `Éditeur YAML : ${pct(k)} % de la largeur`;
+function startDrag(ev, key) {
+  if (ev.button !== 0) return;
+  ev.preventDefault();
+  const el = ev.currentTarget;
+  try { el.setPointerCapture(ev.pointerId); } catch (_) {}
+  el.classList.add('drag'); document.body.classList.add('dragging');
+  const move = e => { layout[key] = clampL(key, fracFromPointer(key, e)); applyLayout(); };
+  const up = () => {
+    el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up);
+    el.classList.remove('drag'); document.body.classList.remove('dragging'); saveLayout(); redraw();
+  };
+  el.addEventListener('pointermove', move); el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+}
+// Clavier : flèches = 2 %, Maj + flèches = 10 %, Début/Fin = limites, Entrée ou double-clic = valeur par défaut
+function splitKeys(ev, key) {
+  const dec = key === 'gr' ? 'ArrowUp' : 'ArrowLeft', inc = key === 'gr' ? 'ArrowDown' : 'ArrowRight';
+  const step = ev.shiftKey ? 0.1 : 0.02;
+  let v = layout[key];
+  if (ev.key === dec) v -= step;
+  else if (ev.key === inc) v += step;
+  else if (ev.key === 'Home') v = L_LIM[key][0];
+  else if (ev.key === 'End') v = L_LIM[key][1];
+  else if (ev.key === 'Enter') v = L_DEF[key];
+  else return;
+  ev.preventDefault();
+  layout[key] = clampL(key, v); applyLayout(); saveLayout(); redraw();
+}
+const Splitter = (key, orient, label, cls) =>
+  m('div.split.' + cls, {
+    role: 'separator', tabindex: 0, 'data-key': key, 'aria-orientation': orient, 'aria-label': label,
+    'aria-valuemin': Math.round(L_LIM[key][0] * 100), 'aria-valuemax': Math.round(L_LIM[key][1] * 100),
+    'aria-valuenow': pct(key), 'aria-valuetext': splitText(key),
+    title: 'Glisser, ou flèches du clavier (Maj : par 10 %). Entrée ou double-clic : taille par défaut.',
+    onpointerdown: ev => startDrag(ev, key), onkeydown: ev => splitKeys(ev, key),
+    ondblclick: () => { layout[key] = L_DEF[key]; applyLayout(); saveLayout(); redraw(); }
+  }, m('span.grip', { 'aria-hidden': 'true' }));
+
+// Agrandir un panneau : il occupe toute la zone centrale ; Échap ou « Restaurer » revient
+const PANE_NAME = { graph: 'Graphe', yaml: 'Éditeur YAML', events: 'Événements' };
+function toggleMax(pane) {
+  store.maxPane = store.maxPane === pane ? null : pane;
+  if (store.maxPane === 'yaml' || store.maxPane === 'events') store.bottomTab = store.maxPane;
+  redraw();
+  requestAnimationFrame(() => requestAnimationFrame(() => { const b = document.getElementById('max-' + pane); if (b) b.focus(); }));
+}
+const ICON_OPEN  = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
+const ICON_CLOSE = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
+const ICON_TRASH = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
+const MaxBtn = pane => {
+  const on = store.maxPane === pane;
+  return m('button.chip-btn.icon-btn', { id: 'max-' + pane, onclick: () => toggleMax(pane),
+    'aria-label': on ? 'Restaurer la disposition' : `Agrandir le panneau ${PANE_NAME[pane]}`,
+    title: on ? 'Restaurer la disposition (Échap)' : `Agrandir : ${PANE_NAME[pane]}`,
+    innerHTML: on ? ICON_CLOSE : ICON_OPEN });
+};
+document.addEventListener('keydown', ev => {
+  if (ev.key === 'Escape' && store.maxPane) { const p = store.maxPane; toggleMax(p); }
+});
+
 const BOTTOM_TABS = [['yaml', 'Éditeur YAML'], ['events', 'Événements']];
 const Bottom = () =>
-  m('div.bottom', { 'data-tab': store.bottomTab },
+  m('div.bottom', { 'data-tab': store.bottomTab, style: colsStyle() },
     m('div.bottom-tabs', { role: 'tablist', 'aria-label': 'Panneau du bas',
                            onkeydown: tabKeys(BOTTOM_TABS, store.bottomTab, t => { store.bottomTab = t; }, 'btab') },
       BOTTOM_TABS.map(([k, label]) =>
@@ -1025,16 +1184,18 @@ const Bottom = () =>
                                tabindex: store.bottomTab === k ? 0 : -1,
                                onclick: () => { store.bottomTab = k; redraw(); } }, label))),
     YamlPanel(),
-    EventsPanel());
+    EventsPanel(),
+    Splitter('yf', 'vertical', 'Redimensionner la largeur de l’éditeur YAML', 'split-v'));
 
 const App = () =>
   m('div', { id: 'app' },
     m('a.skip', { href: '#graph-body' }, 'Aller au graphe'),
     Header(),
     store.approvalVisible ? ApprovalBar() : null,
-    m('main.grid',
+    m('main.grid', { class: (store.maxPane ? 'mx-' + store.maxPane : '') + (store.hideDetail ? ' no-detail' : ''), style: rowsStyle() },
       Sidebar(),
       Graph(),
+      Splitter('gr', 'horizontal', 'Redimensionner la hauteur du graphe', 'split-h'),
       Bottom(),
       Detail()));
 

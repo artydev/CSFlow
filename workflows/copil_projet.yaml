@@ -178,14 +178,16 @@ steps:
 
   # ── 2. Calculs exacts : Python, pas d'IA ─────────────────────────────────────
   - id: indicateurs
-    type: shell
+    type: python
     description: "Indicateurs de pilotage"
-    cmd: 'python tmp\copil\kpi.py tmp\copil\taches.csv {{date_reference}}'
+    script: 'tmp\copil\kpi.py'
+    args: ['tmp\copil\taches.csv', '{{date_reference}}']
 
   - id: statut
-    type: shell
+    type: python
     description: "Statut global (RAG)"
-    cmd: 'python tmp\copil\kpi.py tmp\copil\taches.csv {{date_reference}} --statut'
+    script: 'tmp\copil\kpi.py'
+    args: ['tmp\copil\taches.csv', '{{date_reference}}', '--statut']
 
   # ── 3. Lecture et rédaction : CSAgent ────────────────────────────────────────
   - id: risques
@@ -193,6 +195,7 @@ steps:
     description: "Analyse des risques"
     auto_confirm: true
     prompt: |
+      (N'exécute aucune commande : Python n'est pas installé sur ce poste. Utilise seulement read_file / write_file.)
       Tu es analyste de risques projet. Réponds toujours en français.
       Lis ces fichiers (chemins relatifs, dossier courant) :
       - tmp/copil/taches.csv : le plan de projet
@@ -211,6 +214,7 @@ steps:
     description: "Actions et décisions"
     auto_confirm: true
     prompt: |
+      (N'exécute aucune commande : Python n'est pas installé sur ce poste. Utilise seulement read_file / write_file.)
       Réponds toujours en français. Lis tmp/copil/notes_reunion.md (chemin relatif).
       Écris dans tmp/copil/actions.md :
       1. "## Décisions" : les décisions prises, une ligne chacune, avec leur statut (actée / à confirmer) ;
@@ -227,6 +231,7 @@ steps:
     description: "Rapport de synthèse COPIL"
     auto_confirm: true
     prompt: |
+      (N'exécute aucune commande : Python n'est pas installé sur ce poste. Utilise seulement read_file / write_file.)
       Tu rédiges, en français professionnel et concis, le rapport d'avancement destiné au COPIL
       du 22/10/2026 (lecteurs : sponsor, DGS, directeurs).
       Sources à lire : tmp/copil/indicateurs.md (chiffres de référence, à citer tels quels),
@@ -251,6 +256,7 @@ steps:
     skip_if: "'{{statut.output}}' != 'ROUGE'"
     auto_confirm: true
     prompt: |
+      (N'exécute aucune commande : Python n'est pas installé sur ce poste. Utilise seulement read_file / write_file.)
       Réponds en français. Le projet est au statut {{statut.output}}.
       Lis tmp/copil/indicateurs.md, tmp/copil/risques.md et tmp/copil/notes_reunion.md.
       Rédige dans tmp/copil/note_escalade.md une note courte (10 lignes maximum) de la cheffe de projet

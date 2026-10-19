@@ -15,6 +15,12 @@ import sys
 import threading
 from pathlib import Path
 
+# Mode « interpréteur » : l'exe se rappelle lui-même pour exécuter un script Python
+# (nœud `python`) — aucun Python installé requis. Doit passer avant tout le reste.
+if len(sys.argv) > 2 and sys.argv[1] == "--csflow-python":
+    from nodes.python_node import run_python_cli
+    sys.exit(run_python_cli(sys.argv[2:]))
+
 
 def _app_dirs() -> tuple:
     """(RES_DIR, APP_DIR)
@@ -221,6 +227,12 @@ def run_workflow(path: str) -> dict:
 
 
 @eel.expose
+def dev_mode() -> bool:
+    """CSFLOW_DEBUG=1 : garde la console de développement du navigateur (F12, clic droit › Inspecter)."""
+    return os.environ.get("CSFLOW_DEBUG", "") not in ("", "0")
+
+
+@eel.expose
 def resolve_approval(answer: str) -> dict:
     global _approval_event, _approval_result
     if _approval_event:
@@ -232,14 +244,35 @@ def resolve_approval(answer: str) -> dict:
 
 # ── entry point ───────────────────────────────────────────────────────────────
 
+def _free_port() -> int:
+    """Port libre choisi par le système : deux instances (ou une instance restée ouverte) ne se gênent pas."""
+    import socket
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("localhost", 0))
+        return s.getsockname()[1]
+
+
+def _pick_browser():
+    """Edge (toujours présent sous Windows 10/11), sinon Chrome, sinon None (navigateur par défaut)."""
+    try:
+        import eel.browsers as _b
+        for mode in ("edge", "chrome"):
+            if _b._browser_modules[mode].find_path():
+                return mode
+    except Exception:
+        pass
+    return None
+
+
 if __name__ == "__main__":
-    _kw = dict(size=(1440, 820), port=8765)
-    for _mode in (None, "edge", "browser"):
-        try:
-            if _mode:
-                eel.start("index.html", mode=_mode, **_kw)
-            else:
-                eel.start("index.html", **_kw)
-            break
-        except EnvironmentError:
-            continue
+    # UNE seule fenêtre. Eel ouvre le navigateur AVANT de démarrer le serveur : avec l'ancienne boucle
+    # « essayer chrome, puis edge, puis le navigateur par défaut », la moindre erreur système au démarrage
+    # du serveur (port occupé…) relançait la tentative suivante et ouvrait une 2e fenêtre.
+    _port = _free_port()
+    _mode = _pick_browser()
+    eel.start("index.html", mode=_mode or False, port=_port, size=(1440, 820), block=False)
+    if _mode is None:
+        import webbrowser
+        webbrowser.open(f"http://localhost:{_port}/index.html")
+    while True:                      # eel.sleep (et non time.sleep) : le serveur tourne dans un greenlet
+        eel.sleep(1.0)

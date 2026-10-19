@@ -289,7 +289,8 @@ workflow/
 │   ├── copil_projet.yaml    ← DÉMO CHEF DE PROJET : préparation d'un COPIL (en français)
 │   ├── demo_autofix.yaml    ← corrige un script cassé
 │   ├── demo_report.yaml     ← analyse un CSV → rapport markdown
-│   └── demo_code_review.yaml← inspection + validation humaine + correction
+│   ├── demo_code_review.yaml← inspection + validation humaine + correction
+│   └── dev_fix_tests.yaml   ← tests → CSAgent corrige → re-test → validation → commit
 ├── tmp/                     ← workflows write their artefacts here
 └── requirements.txt         ← pyyaml + eel
 ```
@@ -298,7 +299,56 @@ workflow/
 
 ## Requirements
 
-- Python 3.10+
-- `pip install pyyaml`
+- Python 3.10+ et `pip install -r requirements.txt` (pyyaml + eel) **pour lancer depuis les sources** ; inutile avec l'exe compilé (`build_nuitka.bat`), qui embarque l'interpréteur (voir le nœud `python`)
 - [CSAgent](https://github.com/artydev/CSAgent) running with `--api --yes`
 - An `ALBERT_API_KEY` (or any OpenAI-compatible endpoint via `--endpoint`)
+
+## Workflow développeur : `dev_fix_tests.yaml`
+
+Lance les tests d'un petit projet (dépôt git dans `tmp\devfix`), laisse CSAgent corriger le code
+sans toucher aux tests, relance les tests, affiche `git diff --stat`, puis committe seulement
+après votre validation (rejet : `git checkout`). Pour votre code, changez `inputs.project` et la
+commande de test (`python -m unittest`).
+
+## Disposition réglable
+
+Les panneaux de l'interface se règlent à la souris comme au clavier (les réglages sont mémorisés dans le navigateur) :
+
+- **Poignées** entre le graphe et les panneaux du bas (hauteur) et entre « Éditeur YAML » et « Événements » (largeur, écrans ≥ 1400 px). Souris : glisser. Clavier : Tab jusqu'à la poignée, puis flèches (2 %), Maj + flèches (10 %), Début / Fin (limites). Entrée ou double-clic : taille par défaut.
+- **Masquer le détail** : le bouton à gauche de « Lancer le workflow » cache le panneau de détail de l'étape (à droite) pour donner plus de place au graphe. Le choix est mémorisé.
+- **Agrandir** sur chaque panneau (graphe, YAML, événements) : il occupe toute la zone centrale. Échap ou « Restaurer » revient à la disposition normale.
+
+## Console de développement du navigateur
+
+Dans l'application, F12, Ctrl+Maj+I / J / C, Ctrl+U et le clic droit (« Inspecter ») sont désactivés. Ce confort d'usage n'est pas une protection : la page reste accessible dans un onglet normal du navigateur. Pour les réactiver (débogage de l'interface) :
+
+```bat
+set CSFLOW_DEBUG=1
+python app.py
+```
+
+## Scripts Python sans Python installé : le nœud `python`
+
+Les scripts intégrés aux workflows (`file_write` d'un `.py`, puis exécution) n'ont plus besoin de
+Python sur le poste : le nœud `python` les exécute avec l'interpréteur **embarqué dans l'exe**.
+
+```yaml
+- id: indicateurs
+  type: python
+  script: 'tmp\copil\kpi.py'            # ou  code: |  (Python inline)
+  args: ['tmp\copil\taches.csv', '{{date_reference}}']
+  # cwd: 'tmp\projet'   timeout: 60
+```
+
+Sorties identiques à `shell` : `output`, `stdout`, `stderr`, `returncode`. Dans l'exe compilé, CSFlow
+se relance lui-même (`CSFlow.exe --csflow-python …`), ce qui donne isolation et `timeout`.
+
+Limites : seuls les modules de la bibliothèque standard listés dans `build_nuitka.bat`
+(`--include-module`) sont disponibles — ajoutez-y les vôtres — et pas de `pip install` à l'exécution.
+Les démos `copil_projet`, `demo_autofix` et `dev_fix_tests` utilisent ce nœud ; `shell` reste là
+pour les autres commandes (git, etc.).
+
+**CSAgent et Python :** l'agent exécute ses propres commandes (`sh`) et ne voit pas l'interpréteur embarqué.
+Sur un poste sans Python, un agent qui tente `python` ou `py` échoue. Dans les prompts des étapes
+`agent`, interdisez-lui d'exécuter du code (« n'exécute rien, utilise read_file/edit_file ») : c'est
+l'étape `python` du workflow qui relance le script et rapporte le résultat.

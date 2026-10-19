@@ -1,7 +1,0 @@
-# yaml-language-server: $schema=../csflow.schema.json
-name: Bonjour CSFlow
-description: Un workflow minimal.
-steps:
-  - id: salut
-    type: log
-    message: "Bonjour CSFlow !"

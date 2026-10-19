@@ -2,6 +2,9 @@
 rem ------------------------------------------------------------
 rem Compilation de CSFlow avec Nuitka (un seul exe)
 rem A lancer depuis le dossier workflow\ (celui qui contient app.py)
+rem Les scripts des noeuds `python` sont executes par l'exe lui-meme :
+rem seuls les modules de la bibliotheque standard listes ici (--include-module)
+rem sont disponibles pour eux. Ajoutez les votres au besoin.
 rem ------------------------------------------------------------
 
 python -m nuitka ^
@@ -18,6 +21,26 @@ python -m nuitka ^
     --include-package-data=eel ^
     --include-package=yaml ^
     --include-package=nodes ^
+    --include-module=runpy ^
+    --include-package=unittest ^
+    --include-module=csv ^
+    --include-module=json ^
+    --include-module=datetime ^
+    --include-module=re ^
+    --include-module=math ^
+    --include-module=statistics ^
+    --include-module=collections ^
+    --include-module=itertools ^
+    --include-module=decimal ^
+    --include-module=fractions ^
+    --include-module=random ^
+    --include-module=textwrap ^
+    --include-module=argparse ^
+    --include-module=pathlib ^
+    --include-module=sqlite3 ^
+    --include-module=hashlib ^
+    --include-module=zipfile ^
+    --include-module=string ^
     app.py
 
 if %errorlevel% neq 0 (
