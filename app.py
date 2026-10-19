@@ -10,12 +10,52 @@ Usage (depuis le dossier workflow/) :
 """
 
 import os
+import shutil
+import sys
 import threading
 from pathlib import Path
 
+
+def _app_dirs() -> tuple:
+    """(RES_DIR, APP_DIR)
+    RES_DIR : ressources livrées avec le programme (ui, workflows d'exemple), en lecture seule.
+    APP_DIR : dossier des données de l'utilisateur (workflows, tmp), qui doit survivre à la fermeture.
+
+    Depuis les sources, les deux sont le dossier de app.py. Avec un exécutable Nuitka --onefile,
+    __file__ pointe vers un dossier TEMPORAIRE (extrait au lancement, supprimé à la sortie) :
+    les données de l'utilisateur vivent à côté de l'exe (__compiled__.containing_dir).
+    PyInstaller : même idée avec sys.executable."""
+    res = Path(__file__).resolve().parent
+    try:
+        return res, Path(__compiled__.containing_dir).resolve()   # noqa: F821 — défini par Nuitka
+    except NameError:
+        pass
+    if getattr(sys, "frozen", False):                              # PyInstaller
+        return res, Path(sys.executable).resolve().parent
+    return res, res
+
+
+RES_DIR, APP_DIR = _app_dirs()
+
+
+def _seed(name: str) -> None:
+    """Premier lancement : copie à côté de l'exe ce qui est embarqué (sans jamais écraser)."""
+    src, dst = RES_DIR / name, APP_DIR / name
+    if RES_DIR == APP_DIR or not src.exists() or dst.exists():
+        return
+    if src.is_dir():
+        shutil.copytree(src, dst)
+    else:
+        shutil.copy2(src, dst)
+
+
+for _name in ("workflows", "csflow.schema.json", "start_agent.bat"):
+    _seed(_name)
+(APP_DIR / "tmp").mkdir(exist_ok=True)
+
 # Les chemins relatifs des workflows (tmp\...) sont résolus depuis ce dossier,
 # quel que soit l'endroit d'où app.py est lancé. CSAgent doit tourner depuis ici aussi.
-os.chdir(Path(__file__).resolve().parent)
+os.chdir(APP_DIR)
 
 try:
     import eel
@@ -31,9 +71,9 @@ except ImportError:
 
 from engine import WorkflowEngine
 
-WORKFLOWS_DIR = Path(__file__).parent / "workflows"
+WORKFLOWS_DIR = APP_DIR / "workflows"
 
-eel.init(str(Path(__file__).parent / "ui"))
+eel.init(str(RES_DIR / "ui"))
 
 # ── human approval gate ───────────────────────────────────────────────────────
 _approval_event:  threading.Event | None = None
@@ -45,7 +85,6 @@ _approval_result: dict = {}
 @eel.expose
 def list_workflows() -> list:
     files = sorted(WORKFLOWS_DIR.glob("*.yaml"))
-    print(f"[EEL] list_workflows : {len(files)} fichiers trouvés", flush=True)
     result = []
     for f in files:
         try:

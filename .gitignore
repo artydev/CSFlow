@@ -58,3 +58,4 @@ coverage.xml
 
 tmp/
 nuitka-crash-report.xml
+build_debug/app.exe

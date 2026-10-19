@@ -1,27 +1,28 @@
 @echo off
 rem ------------------------------------------------------------
-rem Build script for Nuitka – compile app.py en un seul exécutable
+rem Compilation de CSFlow avec Nuitka (un seul exe)
+rem A lancer depuis le dossier workflow\ (celui qui contient app.py)
 rem ------------------------------------------------------------
 
-rem Assurez‑vous que le répertoire de travail est le répertoire racine du projet
-rem (celui contenant app.py et les dossiers ui, tmp, workflows).
-
 python -m nuitka ^
-    --standalone ^
     --onefile ^
-    --windows-disable-console ^
+    --windows-console-mode=disable ^
     --remove-output ^
     --output-dir=build ^
+    --output-filename=CSFlow.exe ^
     --include-data-dir=ui=ui ^
-    --include-data-dir=tmp=tmp ^
     --include-data-dir=workflows=workflows ^
+    --include-data-files=csflow.schema.json=csflow.schema.json ^
+    --include-data-files=start_agent.bat=start_agent.bat ^
     --include-package=eel ^
+    --include-package-data=eel ^
     --include-package=yaml ^
+    --include-package=nodes ^
     app.py
 
 if %errorlevel% neq 0 (
     echo Erreur lors de la compilation avec Nuitka.
     exit /b %errorlevel%
-) else (
-    echo Compilation reussie. L'executable se trouve dans le dossier "build".
 )
+echo Compilation reussie : build\CSFlow.exe
+echo Au premier lancement, CSFlow cree a cote de l'exe les dossiers workflows et tmp.
