@@ -16,7 +16,6 @@ python -m nuitka ^
     --include-data-dir=ui=ui ^
     --include-data-dir=workflows=workflows ^
     --include-data-files=csflow.schema.json=csflow.schema.json ^
-    --include-data-files=start_agent.bat=start_agent.bat ^
     --include-package=eel ^
     --include-package-data=eel ^
     --include-package=yaml ^
@@ -47,5 +46,7 @@ if %errorlevel% neq 0 (
     echo Erreur lors de la compilation avec Nuitka.
     exit /b %errorlevel%
 )
+copy /y start_agent.bat build\start_agent.bat >nul
 echo Compilation reussie : build\CSFlow.exe
+echo Livrez build\CSFlow.exe ET build\start_agent.bat dans le meme dossier : lancez start_agent.bat (CSAgent puis CSFlow).
 echo Au premier lancement, CSFlow cree a cote de l'exe les dossiers workflows et tmp.
