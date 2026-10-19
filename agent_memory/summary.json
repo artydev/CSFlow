@@ -1,25 +1,32 @@
 {
   "decisions": [
-    "Wrote risk analysis report in tmp/copil/risques.md based on source files",
-    "Wrote actions report in tmp/copil/actions.md based on meeting notes",
-    "Wrote COPIL progress report in tmp/copil/rapport_copil.md based on source files",
-    "Wrote escalation note in tmp/copil/note_escalade.md based on source files"
+    "Cr\u00E9er le script build_nuitka.bat avec --onefile, --standalone et --include-data-dir=workflows",
+    "Utiliser des chemins relatifs depuis le r\u00E9pertoire racine du projet",
+    "Inclure les options Windows d\u00E9sactivant la console et les r\u00E9pertoires ui, tmp si n\u00E9cessaire",
+    "R\u00E9diger l\u0027analyse des risques dans tmp/copil/risques.md avec un tableau Markdown class\u00E9 du plus critique au moins critique"
   ],
   "constraints": [
-    "All file operations must use relative paths within the current working directory",
-    "Reports must be written in French, professional and concise",
-    "Only cite figures that appear in the source files; no invented numbers",
-    "Risk report must use Markdown table with columns: Risque | Cause | Probabilit\u00E9 | Impact | Action recommand\u00E9e",
-    "Actions report must have sections: D\u00E9cisions, Plan d\u0027actions (table), Points d\u0027attention",
-    "COPIL report must have exact sections: En une phrase, Indicateurs cl\u00E9s, Faits marquants, Risques majeurs, D\u00E9cisions attendues du COPIL, Prochaines \u00E9tapes sur 14 jours",
-    "Escalation note must be max 10 lines, with 2 chiffr\u00E9es sentences, impact, 3 options with avantage/inconv\u00E9nient, and recommendation",
-    "Project resides on Windows; respect case-insensitive file handling"
+    "Chemins relatifs uniquement dans le r\u00E9pertoire de travail",
+    "Environnement Windows, insensible \u00E0 la casse",
+    "Toutes les r\u00E9ponses en fran\u00E7ais, style professionnel et concis",
+    "Respecter les formats Markdown indiqu\u00E9s pour chaque livrable",
+    "Statut global du projet fix\u00E9 \u00E0 ROUGE",
+    "Ne pas recalculer les indicateurs d\u00E9j\u00E0 fournis dans tmp/copil/indicateurs.md",
+    "Appuyer chaque risque sur un fait pr\u00E9cis des fichiers (t\u00E2che, personne, chiffre) sans inventer"
   ],
   "pending": [
-    "Run a basic syntax/validation check on the files in tmp/mon-projet",
-    "Prepare a security analysis report for tmp/mon-projet if requested",
-    "Commit the modified agent_memory/conversation.json (currently uncommitted)"
+    "Ex\u00E9cuter build_nuitka.bat pour recompiler l\u0027ex\u00E9cutable avec le dossier workflows inclus",
+    "Lancer le nouvel exe et v\u00E9rifier que les workflows sont d\u00E9tect\u00E9s",
+    "Mettre \u00E0 jour le rapport COPIL et la note d\u0027escalade si de nouveaux risques apparaissent",
+    "V\u00E9rifier que le r\u00E9pertoire workflows est bien accessible \u00E0 c\u00F4t\u00E9 de l\u0027ex\u00E9cutable apr\u00E8s compilation"
   ],
-  "failed_approaches": [],
-  "created_at": "2026-10-18T18:16:58.2434176Z"
+  "failed_approaches": [
+    "Compilation avec --mingw64 (non support\u00E9 sur Python 3.13\u002B)",
+    "Utilisation de --msvc sans sp\u00E9cifier de version",
+    "Compilation incluant les packages via --include-package a expir\u00E9 (timeout)",
+    "Tentative d\u0027ex\u00E9cution du binaire app.dist/app.exe avec chemin incorrect",
+    "Copie manuelle des dossiers eel et yaml au lieu d\u0027utiliser --include-package",
+    "Ex\u00E9cution de l\u0027ex\u00E9cutable pr\u00E9c\u00E9demment compil\u00E9 sans inclure le r\u00E9pertoire workflows"
+  ],
+  "created_at": "2026-10-19T10:25:51.0400446Z"
 }

@@ -1,1 +1,87 @@
-[]
+[
+  {
+    "id": "11d2463b-2e46-4310-89e0-d1a620b50413",
+    "type": "error_pattern",
+    "summary": "[sh] Error: command timed out (60s).",
+    "tags": [
+      "error",
+      "timeout",
+      "shell"
+    ],
+    "createdAt": "2026-10-19T11:47:18.6811647\u002B02:00",
+    "context": {
+      "tool": "sh",
+      "step": "4"
+    },
+    "count": 2,
+    "lastSeen": "2026-10-19T09:48:20.9978423Z"
+  },
+  {
+    "id": "b8fb15c7-c9a2-4c4f-bc8e-c9d577f0944b",
+    "type": "solution",
+    "summary": "[sh] succeeded after timeout error with: {\u0022cmd\u0022:\u0022python - \u003C\u003CPY\\nimport site, sys, json, os\\nprint(json.dumps(site.getsitepackages()))\\nPY\u0022}",
+    "tags": [
+      "solution",
+      "timeout",
+      "shell"
+    ],
+    "createdAt": "2026-10-19T11:48:23.9539996\u002B02:00",
+    "context": {
+      "tool": "sh",
+      "step": "7"
+    },
+    "count": 1,
+    "lastSeen": "2026-10-19T09:48:23.9539996Z"
+  },
+  {
+    "id": "f1908762-7e26-40cb-b995-794b967b5e2d",
+    "type": "solution",
+    "summary": "[sh] succeeded after timeout error with: {\u0022cmd\u0022: \u0022python - \u003C\u003C\u0027PY\u0027\\nimport site, json, sys\\nprint(json.dumps(site.getsitepackages()))\\nPY\u0022}",
+    "tags": [
+      "solution",
+      "timeout",
+      "shell"
+    ],
+    "createdAt": "2026-10-19T11:48:24.6296115\u002B02:00",
+    "context": {
+      "tool": "sh",
+      "step": "9"
+    },
+    "count": 2,
+    "lastSeen": "2026-10-19T09:48:25.4077878Z"
+  },
+  {
+    "id": "cf85c1d8-572b-4806-b15e-d552398cc1c4",
+    "type": "solution",
+    "summary": "[sh] succeeded after timeout error with: {\u0022cmd\u0022: \u0022app.exe\u0022}",
+    "tags": [
+      "solution",
+      "timeout",
+      "shell"
+    ],
+    "createdAt": "2026-10-19T12:05:28.1597829\u002B02:00",
+    "context": {
+      "tool": "sh",
+      "step": "4"
+    },
+    "count": 1,
+    "lastSeen": "2026-10-19T10:05:28.1597829Z"
+  },
+  {
+    "id": "ef8a4f69-13ab-4cb2-8852-a6671f083cad",
+    "type": "solution",
+    "summary": "[sh] succeeded after timeout error with: {\u0022cmd\u0022: \u0022.\\\\app.exe\u0022}",
+    "tags": [
+      "solution",
+      "timeout",
+      "shell"
+    ],
+    "createdAt": "2026-10-19T12:05:28.8563898\u002B02:00",
+    "context": {
+      "tool": "sh",
+      "step": "5"
+    },
+    "count": 1,
+    "lastSeen": "2026-10-19T10:05:28.8563898Z"
+  }
+]
