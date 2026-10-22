@@ -45,8 +45,12 @@ python3 -m nuitka \
     app.py
 
 cp -f start_agent.sh build/start_agent.sh
-chmod +x build/CSFlow build/start_agent.sh
+cp -f start_csagent.sh build/start_csagent.sh
+cp -f mcp.json.example build/mcp.json.example
+cp -rf skills build/
+chmod +x build/CSFlow build/start_agent.sh build/start_csagent.sh
 
 echo "Compilation reussie : build/CSFlow"
 echo "Livrez build/CSFlow ET build/start_agent.sh dans le meme dossier : lancez ./start_agent.sh (CSAgent puis CSFlow)."
+echo "Mode MCP : lancez ./start_csagent.sh (CSAgent lance CSFlow --mcp) ; le dossier build/skills est lu par CSAgent."
 echo "Au premier lancement, CSFlow cree a cote de l'executable les dossiers workflows et tmp."

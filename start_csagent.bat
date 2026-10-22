@@ -27,14 +27,15 @@ exit /b 1
 :agent_ok
 
 if exist mcp.json goto mcp_ok
-if not exist mcp.json.example goto mcp_missing
-copy mcp.json.example mcp.json >nul
-echo   mcp.json cree depuis mcp.json.example (verifiez la commande).
-goto mcp_ok
-:mcp_missing
-echo  ERREUR : mcp.json introuvable.
+if exist CSFlow.exe copy mcp.windows.exe.example mcp.json >nul
+if exist mcp.json goto mcp_made
+if exist app.py copy mcp.windows.source.example mcp.json >nul
+if exist mcp.json goto mcp_made
+echo  ERREUR : mcp.json introuvable (et ni CSFlow.exe ni app.py a cote de ce fichier).
 pause
 exit /b 1
+:mcp_made
+echo   mcp.json cree (verifiez la commande si besoin).
 :mcp_ok
 
 set "MODEL_ARG="
