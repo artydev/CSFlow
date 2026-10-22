@@ -101,3 +101,21 @@ Exécute une commande shell (cmd.exe sous Windows, bash ailleurs).
 - `{{id.output}}` : résultat de l'étape « id » ; autres champs : {{id.returncode}}, {{id.stdout}}, {{id.status}}... selon le type
 - `{{nom}}` : variable déclarée dans `inputs`
 
+## Mode MCP (`CSFlow --mcp`)
+
+Serveur MCP (stdio, JSON-RPC 2.0) qui expose les workflows du dossier `workflows/` à un client comme CSAgent.
+
+| Outil | Paramètres | Réponse (JSON dans un bloc texte) |
+|---|---|---|
+| `csflow_list` | — | `cwd`, `workflows[]` : `file`, `name`, `description`, `steps`, `needs_human`, `uses_agent` |
+| `csflow_check` | `workflow` | `ok`, `errors`, `warnings`, `issues[]` (`level`, `line`, `message`), `needs_human` |
+| `csflow_run` | `workflow`, `wait_seconds` (≤ 55, défaut 50) | état du run, ou `started: false` + `reason` (`validation errors` + `issues`, run déjà en cours) ; erreur d'outil si `needs_human` |
+| `csflow_status` | `run_id` (facultatif), `wait_seconds` | état du run |
+
+État d'un run : `run_id`, `workflow`, `status` (`running` \| `done` \| `error`), `elapsed_s`, `progress`, `steps[]`
+(`id`, `type`, `status`, `duration`, `returncode`, `output` tronquée), `current_step`, `agent_last_thought`, `next`,
+`result`, `error`, `warnings` ; en échec : `failed_step` (`id`, `returncode`, `output` complète).
+
+`workflow` = nom de fichier seul (`demo_report` ou `demo_report.yaml`) ; chemins, `..` et fichiers cachés refusés.
+Un seul run à la fois ; un workflow avec `human_approval` n'est jamais lancé par ce mode.
+

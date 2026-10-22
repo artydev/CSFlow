@@ -476,9 +476,20 @@ Dans VS Code, ajoute en première ligne : `# yaml-language-server: $schema=../cs
 
 Quand l'utilisateur te montre un de ces workflows, **explique-le** en distinguant « exécuté par Python » et « exécuté par CSAgent ».
 
-Note : `CSFlow --mcp` expose `csflow_list`, `csflow_check`, `csflow_run` et `csflow_status` à un agent
-(voir README). Dans ce mode, un workflow contenant `human_approval` est refusé : si l'utilisateur veut
-qu'un workflow soit lançable par un agent, ne mets pas de validation humaine dedans.
+### Mode MCP : un agent lance les workflows
+
+`CSFlow --mcp` expose quatre outils à CSAgent : `csflow_list`, `csflow_check`, `csflow_run`, `csflow_status`
+(voir `REFERENCE.md`). Ce que tu dois savoir pour conseiller le développeur :
+
+- un workflow contenant `human_approval` est **refusé** par `csflow_run` : s'il doit pouvoir être lancé par un agent,
+  ne mets pas de validation humaine dedans ; sinon il se lance depuis l'interface ;
+- un appel MCP est coupé à 60 s côté CSAgent : `csflow_run` et `csflow_status` rendent la main après 55 s au plus
+  avec `status: running`, et l'agent rappelle `csflow_status` jusqu'à `done` ou `error` ;
+- un seul run à la fois ; seuls les fichiers de `workflows/` sont accessibles ;
+- les étapes `agent` passent par un CSAgent « worker » (`csagent --api`, port 8080) lancé par `start_csagent` ;
+- un run en `error` renvoie `failed_step` : lis son `output` avant de proposer une correction ;
+- les étapes `shell` et `python` ne passent pas par le filtre de commandes de CSAgent : ne fais pas écrire de workflow
+  par l'agent sans demande explicite du développeur.
 
 ---
 
