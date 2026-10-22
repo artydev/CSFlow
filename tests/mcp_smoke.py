@@ -7,9 +7,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 WF = {
     "quick.yaml": "name: quick\nsteps:\n  - id: a\n    type: log\n    message: bonjour\n",
-    "slow.yaml": "name: slow\nsteps:\n  - id: a\n    type: shell\n    cmd: python3 -c \"import time; time.sleep(3)\"\n",
+    "slow.yaml": "name: slow\nsteps:\n  - id: a\n    type: python\n    code: |\n      import time\n      time.sleep(3)\n",
     "human.yaml": "name: human\nsteps:\n  - id: h\n    type: human_approval\n    message: ok ?\n",
-    "fails.yaml": "name: fails\nsteps:\n  - id: f\n    type: shell\n    cmd: python3 -c \"import sys; sys.exit(3)\"\n",
+    "fails.yaml": "name: fails\nsteps:\n  - id: f\n    type: python\n    code: |\n      import sys\n      sys.exit(3)\n",
     "broken.yaml": "name: broken\nsteps:\n  - id: x\n    type: nonexistent\n",
 }
 fails = []
@@ -55,5 +55,7 @@ err, d2 = call("csflow_run", workflow="quick.yaml", wait_seconds=1); check(d2.ge
 err, d = call("csflow_status", run_id=rid, wait_seconds=30); check(d["status"] == "done", "status long-poll -> done")
 err, d = call("csflow_status", run_id="zzz"); check(err, "run_id inconnu")
 check(rpc("foo/bar")["error"]["code"] == -32601, "methode inconnue -> -32601")
-p.stdin.close(); check(p.wait(timeout=10) == 0, "sortie propre sur EOF")
+p.stdin.close()
+try: check(p.wait(timeout=10) == 0, "sortie propre sur EOF")
+except subprocess.TimeoutExpired: p.kill(); check(False, "sortie propre sur EOF (le serveur ne s'arrete pas)")
 print("\n" + ("TOUT EST OK" if not fails else f"{len(fails)} ECHEC(S)")); sys.exit(1 if fails else 0)

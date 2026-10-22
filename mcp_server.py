@@ -402,4 +402,11 @@ def serve(workflows_dir) -> int:
                     print(f"[mcp] erreur interne : {exc!r}", file=sys.stderr, flush=True)
                     if item.get("id") is not None:
                         _reply(item["id"], error={"code": -32603, "message": "internal error"})
-    return 0
+    # stdin ferme : sortie immediate. Un workflow encore en cours (thread ou processus fils)
+    # ne doit pas retenir le serveur, sinon CSAgent croit qu'il ne s'arrete pas.
+    for stream in (_out, sys.stdout, sys.stderr):
+        try:
+            stream.flush()
+        except Exception:                                 # noqa: BLE001
+            pass
+    os._exit(0)
