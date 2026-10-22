@@ -13,7 +13,7 @@ pip install -r requirements.txt
 ```
 
 **2. Lancer CSAgent** dans un terminal dédié — *depuis ce dossier* `workflow\`
-(CSAgent n'écrit que dans son dossier courant ; `start_agent.bat` s'y place tout seul)
+(CSAgent n'écrit que dans son dossier courant ; `start_agent.bat` doit être placé à côté de `CSFlow.exe` — la compilation l'y copie dans `build\`)
 
 ```bat
 set ALBERT_API_KEY=ta-cle
@@ -352,3 +352,29 @@ pour les autres commandes (git, etc.).
 Sur un poste sans Python, un agent qui tente `python` ou `py` échoue. Dans les prompts des étapes
 `agent`, interdisez-lui d'exécuter du code (« n'exécute rien, utilise read_file/edit_file ») : c'est
 l'étape `python` du workflow qui relance le script et rapporte le résultat.
+
+## Mode MCP : CSAgent lance vos workflows (`CSFlow --mcp`)
+
+`CSFlow --mcp` démarre CSFlow **sans interface**, comme serveur MCP (stdio). CSAgent, en mode terminal
+normal, peut alors lister, vérifier et exécuter vos workflows.
+
+```
+Vous ──► CSAgent interactif (sans --yes) ──MCP──► CSFlow --mcp ──► moteur ──► (étapes agent) ──► CSAgent worker --api :8080
+```
+
+Mise en route : `start_csagent.bat` (Windows) ou `./start_csagent.sh` (Linux/WSL). Le script copie
+`mcp.json.example` en `mcp.json` si besoin, lance le worker (`--api`, mémoire `csflow_worker`), puis
+le CSAgent interactif avec `--mcp-config mcp.json`. Copiez `skills/csflow.md` et la ligne de
+`skills/INDEX.md` dans le dossier `skills/` de CSAgent pour qu'il sache comment s'en servir.
+
+Quatre outils : `csflow_list`, `csflow_check`, `csflow_run`, `csflow_status`. Garde-fous :
+
+- seuls les fichiers du dossier `workflows/` sont accessibles (aucun chemin, aucun `..`) ;
+- un seul workflow à la fois ; un workflow contenant `human_approval` est **refusé** (à lancer depuis l'interface) ;
+- CSAgent limite un appel MCP à 60 s : `csflow_run` et `csflow_status` attendent au plus 55 s puis
+  rendent l'état (`running`), CSAgent relance `csflow_status` jusqu'à `done` ou `error` ;
+- le CSAgent interactif n'est pas lancé avec `--yes` : chaque appel MCP vous est demandé.
+
+**Limite à connaître :** les étapes `shell` et `python` d'un workflow ne passent pas par le filtre de
+commandes de CSAgent, et un agent pourrait écrire un workflow. Ne confiez à ce mode que des workflows
+et un dossier de confiance. Test sans CSAgent : `python3 tests/mcp_smoke.py`.

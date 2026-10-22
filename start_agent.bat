@@ -50,7 +50,7 @@ echo   Ecoute sur http://localhost:%PORT%
 echo.
 
 rem 1. CSAgent dans sa propre fenetre (reduite), meme dossier de travail
-start "CSAgent-API" /min cmd /c %CSAGENT_BIN% --api --yes --port %PORT% --api-key %API_KEY%
+start "CSAgent-API" /min cmd /c %CSAGENT_BIN% --api --yes --port %PORT% --api-key %API_KEY% --mem csflow_worker --no-distill
 
 rem 2. laisser a CSAgent le temps d'ouvrir son port
 timeout /t 3 /nobreak >nul
