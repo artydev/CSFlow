@@ -356,25 +356,59 @@ l'étape `python` du workflow qui relance le script et rapporte le résultat.
 ## Mode MCP : CSAgent lance vos workflows (`CSFlow --mcp`)
 
 `CSFlow --mcp` démarre CSFlow **sans interface**, comme serveur MCP (stdio). CSAgent, en mode terminal
-normal, peut alors lister, vérifier et exécuter vos workflows.
+normal, peut alors lister, vérifier et exécuter vos workflows, et vous rendre compte du résultat.
 
 ```
 Vous ──► CSAgent interactif (sans --yes) ──MCP──► CSFlow --mcp ──► moteur ──► (étapes agent) ──► CSAgent worker --api :8080
 ```
 
-Mise en route : `start_csagent.bat` (Windows) ou `./start_csagent.sh` (Linux/WSL). Le script copie
-`mcp.json.example` en `mcp.json` si besoin, lance le worker (`--api`, mémoire `csflow_worker`), puis
-le CSAgent interactif avec `--mcp-config mcp.json`. Copiez `skills/csflow.md` et la ligne de
-`skills/INDEX.md` dans le dossier `skills/` de CSAgent pour qu'il sache comment s'en servir.
+### Mise en route (exe compilé, Windows)
 
-Quatre outils : `csflow_list`, `csflow_check`, `csflow_run`, `csflow_status`. Garde-fous :
+1. Compilez avec `build_nuitka.bat` : `build\` contient `CSFlow.exe`, `start_agent.bat`, `start_csagent.bat`,
+   `mcp.windows.exe.example` et le dossier `skills\`.
+2. Dans `build\` :
+   ```
+   set ALBERT_API_KEY=votre-clé
+   set MODEL=nom-du-modèle        (facultatif : sinon routage automatique de CSAgent)
+   start_csagent.bat
+   ```
+   Au premier lancement le script crée `mcp.json` (à partir de `mcp.windows.exe.example`), démarre le
+   **worker** `csagent --api` (port 8080, mémoire `csflow_worker`) puis le CSAgent interactif avec
+   `--mcp-config mcp.json`. Fermer CSAgent arrête le worker.
+3. Dans CSAgent : « Liste les workflows CSFlow », « Vérifie demo_report », « Lance demo_report ».
+   Chaque appel MCP vous est demandé (CSAgent interactif lancé sans `--yes`).
+
+Autres cas : depuis les sources sous Windows, `start_csagent.bat` choisit `mcp.windows.source.example`
+(`python.exe app.py --mcp`) ; sous Linux/WSL, `./start_csagent.sh` utilise `mcp.json.example` (`./CSFlow --mcp`).
+CSAgent lit la skill `skills/csflow.md` depuis son dossier de travail : lancez-le depuis le dossier de CSFlow.
+
+### Les quatre outils
+
+| Outil | Rôle |
+|---|---|
+| `csflow_list` | liste les workflows de `workflows/` (`needs_human`, `uses_agent`, nombre d'étapes) et le dossier de travail `cwd` |
+| `csflow_check` | valide un workflow sans l'exécuter (`ok`, `errors`, `warnings`, `issues`) |
+| `csflow_run` | valide puis lance un workflow ; attend au plus 55 s ; renvoie l'état |
+| `csflow_status` | état d'un run (le dernier par défaut) ; attend au plus 55 s qu'il change |
+
+États d'un run : `running`, `done`, `error`. Un run en erreur renvoie `failed_step` (id, code retour, sortie).
+`csflow_run` répond `started: false` avec la raison si le workflow est invalide ou si un autre run est en cours.
+
+### Garde-fous
 
 - seuls les fichiers du dossier `workflows/` sont accessibles (aucun chemin, aucun `..`) ;
-- un seul workflow à la fois ; un workflow contenant `human_approval` est **refusé** (à lancer depuis l'interface) ;
-- CSAgent limite un appel MCP à 60 s : `csflow_run` et `csflow_status` attendent au plus 55 s puis
-  rendent l'état (`running`), CSAgent relance `csflow_status` jusqu'à `done` ou `error` ;
+- un seul workflow à la fois ;
+- un workflow contenant `human_approval` est **refusé** : à lancer depuis l'interface, où vous approuvez ;
+- CSAgent coupe un appel MCP à 60 s : `csflow_run` et `csflow_status` rendent donc la main après 55 s au plus
+  (`running`), et CSAgent rappelle `csflow_status` jusqu'à `done` ou `error` ;
 - le CSAgent interactif n'est pas lancé avec `--yes` : chaque appel MCP vous est demandé.
 
 **Limite à connaître :** les étapes `shell` et `python` d'un workflow ne passent pas par le filtre de
 commandes de CSAgent, et un agent pourrait écrire un workflow. Ne confiez à ce mode que des workflows
-et un dossier de confiance. Test sans CSAgent : `python3 tests/mcp_smoke.py`.
+et un dossier de confiance.
+
+### Vérifier
+
+- Sans CSAgent : `python tests\mcp_smoke.py` (19 contrôles, doit finir par `TOUT EST OK`).
+- Exe compilé : un exe sans console n'écrit rien dans `cmd` ; testez-le avec des tubes (voir `tests/mcp_smoke.py`
+  pour le protocole), ou directement depuis CSAgent.
