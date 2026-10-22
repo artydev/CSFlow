@@ -28,7 +28,7 @@ def _exe() -> str:
         getattr(comp, "original_argv0", "") or "",
         sys.argv[0] if sys.argv else "",
         sys.executable,
-        getattr(comp, "containing_dir", "") and os.path.join(comp.containing_dir, "CSFlow.exe"),
+        getattr(comp, "containing_dir", "") and os.path.join(comp.containing_dir, "CSFlow.exe" if sys.platform == "win32" else "CSFlow"),
     ]
     import shutil
     for c in cands:

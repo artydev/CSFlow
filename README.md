@@ -13,7 +13,7 @@ pip install -r requirements.txt
 ```
 
 **2. Lancer CSAgent** dans un terminal dédié — *depuis ce dossier* `workflow\`
-(CSAgent n'écrit que dans son dossier courant ; `start_agent.bat` s'y place tout seul)
+(CSAgent n'écrit que dans son dossier courant ; `start_agent.bat` doit être placé à côté de `CSFlow.exe` — la compilation l'y copie dans `build\`)
 
 ```bat
 set ALBERT_API_KEY=ta-cle

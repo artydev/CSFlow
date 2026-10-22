@@ -268,11 +268,14 @@ if __name__ == "__main__":
     # UNE seule fenêtre. Eel ouvre le navigateur AVANT de démarrer le serveur : avec l'ancienne boucle
     # « essayer chrome, puis edge, puis le navigateur par défaut », la moindre erreur système au démarrage
     # du serveur (port occupé…) relançait la tentative suivante et ouvrait une 2e fenêtre.
-    _port = _free_port()
-    _mode = _pick_browser()
+    _port = int(os.environ.get("CSFLOW_PORT") or 0) or _free_port()
+    _url = f"http://localhost:{_port}/index.html"
+    _headless = os.environ.get("CSFLOW_NO_BROWSER") == "1"      # WSL / serveur : on ouvre l'URL soi-même
+    _mode = None if _headless else _pick_browser()
+    print(f"CSFlow : {_url}", flush=True)
     eel.start("index.html", mode=_mode or False, port=_port, size=(1440, 820), block=False)
-    if _mode is None:
+    if _mode is None and not _headless:
         import webbrowser
-        webbrowser.open(f"http://localhost:{_port}/index.html")
+        webbrowser.open(_url)
     while True:                      # eel.sleep (et non time.sleep) : le serveur tourne dans un greenlet
         eel.sleep(1.0)
