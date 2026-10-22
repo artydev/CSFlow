@@ -29,13 +29,14 @@ pause
 exit /b 1
 :agent_ok
 
+rem NB : "python.exe" avec extension : "start python" peut ouvrir un DOSSIER nomme python du PATH.
 rem Application CSFlow : exe a cote de ce fichier, sinon build\CSFlow.exe, sinon app.py
 set "CSFLOW_CMD="
 if exist "%~dp0CSFlow.exe" set CSFLOW_CMD="%~dp0CSFlow.exe"
 if defined CSFLOW_CMD goto flow_ok
 if exist "%~dp0build\CSFlow.exe" set CSFLOW_CMD="%~dp0build\CSFlow.exe"
 if defined CSFLOW_CMD goto flow_ok
-if exist "%~dp0app.py" set CSFLOW_CMD=python "%~dp0app.py"
+if exist "%~dp0app.py" set CSFLOW_CMD=python.exe "%~dp0app.py"
 if defined CSFLOW_CMD goto flow_ok
 echo.
 echo  ERREUR : CSFlow.exe ou app.py introuvable a cote de ce fichier.
