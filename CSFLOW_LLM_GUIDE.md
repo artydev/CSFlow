@@ -476,6 +476,10 @@ Dans VS Code, ajoute en première ligne : `# yaml-language-server: $schema=../cs
 
 Quand l'utilisateur te montre un de ces workflows, **explique-le** en distinguant « exécuté par Python » et « exécuté par CSAgent ».
 
+Note : `CSFlow --mcp` expose `csflow_list`, `csflow_check`, `csflow_run` et `csflow_status` à un agent
+(voir README). Dans ce mode, un workflow contenant `human_approval` est refusé : si l'utilisateur veut
+qu'un workflow soit lançable par un agent, ne mets pas de validation humaine dedans.
+
 ---
 
 ## 12. Façon de répondre aux demandes courantes

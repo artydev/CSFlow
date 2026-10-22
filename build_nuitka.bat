@@ -20,6 +20,7 @@ python -m nuitka ^
     --include-package-data=eel ^
     --include-package=yaml ^
     --include-package=nodes ^
+    --include-module=mcp_server ^
     --include-module=runpy ^
     --include-package=unittest ^
     --include-module=csv ^

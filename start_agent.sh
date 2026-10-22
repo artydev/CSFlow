@@ -38,7 +38,7 @@ echo "  Ecoute sur http://localhost:$PORT"
 echo
 
 # 1. CSAgent en arriere-plan, meme dossier de travail
-"$CSAGENT_BIN" --api --yes --port "$PORT" --api-key "$API_KEY" >csagent.log 2>&1 &
+"$CSAGENT_BIN" --api --yes --port "$PORT" --api-key "$API_KEY" --mem csflow_worker --no-distill >csagent.log 2>&1 &
 AGENT_PID=$!
 trap 'kill "$AGENT_PID" 2>/dev/null' EXIT INT TERM
 

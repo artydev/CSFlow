@@ -63,6 +63,12 @@ for _name in ("workflows", "csflow.schema.json"):
 # quel que soit l'endroit d'où app.py est lancé. CSAgent doit tourner depuis ici aussi.
 os.chdir(APP_DIR)
 
+# Mode « serveur MCP » (stdio) : CSAgent lance lui-même `CSFlow --mcp` pour piloter les workflows
+# sans interface. Doit passer avant `import eel` : aucune interface n'est démarrée.
+if len(sys.argv) > 1 and sys.argv[1] == "--mcp":
+    from mcp_server import serve
+    sys.exit(serve(APP_DIR / "workflows"))
+
 try:
     import eel
 except ImportError:
