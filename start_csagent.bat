@@ -8,6 +8,8 @@ cd /d "%~dp0"
 set CSAGENT_BIN=csagent
 set PORT=8080
 set API_KEY=demo-secret
+rem MODEL : nom du modele (vide = routage automatique), ex : set MODEL=mon-modele-rapide
+if not defined MODEL set MODEL=
 
 if not "%ALBERT_API_KEY%"=="" goto key_ok
 echo.
@@ -35,7 +37,9 @@ pause
 exit /b 1
 :mcp_ok
 
-start "CSAgent-Worker" /min cmd /c %CSAGENT_BIN% --api --yes --port %PORT% --api-key %API_KEY% --mem csflow_worker --no-distill
+set "MODEL_ARG="
+if defined MODEL set MODEL_ARG=--model %MODEL%
+start "CSAgent-Worker" /min cmd /c %CSAGENT_BIN% --api --yes --port %PORT% --api-key %API_KEY% %MODEL_ARG% --mem csflow_worker --no-distill
 timeout /t 3 /nobreak >nul
 
 echo   CSAgent interactif avec le serveur MCP CSFlow...
