@@ -19,6 +19,8 @@ python3 -m nuitka \
     --include-data-dir=ui=ui \
     --include-data-dir=workflows=workflows \
     --include-data-files=csflow.schema.json=csflow.schema.json \
+    --include-data-files=CSFLOW_LLM_GUIDE.md=CSFLOW_LLM_GUIDE.md \
+    --include-data-files=REFERENCE.md=REFERENCE.md \
     --include-package=eel \
     --include-package-data=eel \
     --include-package=yaml \
@@ -53,4 +55,4 @@ chmod +x build/CSFlow build/start_agent.sh build/start_csagent.sh
 echo "Compilation reussie : build/CSFlow"
 echo "Livrez build/CSFlow ET build/start_agent.sh dans le meme dossier : lancez ./start_agent.sh (CSAgent puis CSFlow)."
 echo "Mode MCP : lancez ./start_csagent.sh (CSAgent lance CSFlow --mcp) ; le dossier build/skills est lu par CSAgent."
-echo "Au premier lancement, CSFlow cree a cote de l'executable les dossiers workflows et tmp."
+echo "Au premier lancement, CSFlow cree a cote de l'executable les dossiers workflows et tmp, le schema, CSFLOW_LLM_GUIDE.md et REFERENCE.md."

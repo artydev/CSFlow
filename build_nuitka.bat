@@ -16,6 +16,8 @@ python -m nuitka ^
     --include-data-dir=ui=ui ^
     --include-data-dir=workflows=workflows ^
     --include-data-files=csflow.schema.json=csflow.schema.json ^
+    --include-data-files=CSFLOW_LLM_GUIDE.md=CSFLOW_LLM_GUIDE.md ^
+    --include-data-files=REFERENCE.md=REFERENCE.md ^
     --include-package=eel ^
     --include-package-data=eel ^
     --include-package=yaml ^
@@ -54,4 +56,4 @@ xcopy /e /i /y skills build\skills >nul
 echo Compilation reussie : build\CSFlow.exe
 echo Livrez build\CSFlow.exe ET build\start_agent.bat dans le meme dossier : lancez start_agent.bat (CSAgent puis CSFlow).
 echo Mode MCP : lancez build\start_csagent.bat (CSAgent lance CSFlow --mcp) ; le dossier build\skills est lu par CSAgent.
-echo Au premier lancement, CSFlow cree a cote de l'exe les dossiers workflows et tmp.
+echo Au premier lancement, CSFlow cree a cote de l exe les dossiers workflows et tmp, le schema, CSFLOW_LLM_GUIDE.md et REFERENCE.md.
