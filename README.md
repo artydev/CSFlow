@@ -81,10 +81,10 @@ Il pèse environ 14 Mo sous Windows et 50 Mo sous Linux.
   entre **quotes simples** : `cmd: 'python tmp\broken.py'` (en quotes doubles, `\` serait un échappement).
 - Linux : les commandes `shell` sont exécutées par `bash` (`cat`, `ls`, `wc -l`…), avec des chemins en `/`.
   Pour compter les lignes : `wc -l < fichier`.
-- **Attention aux démos fournies.** `copil_projet`, `demo_report` et une partie des autres ont été écrites
-  pour Windows : chemins en `tmp\…` et commandes `cmd.exe` (par exemple `type … | find /c /v ""`). Sous Linux,
-  adaptez ces chemins et ces commandes, ou utilisez le nœud `python`, qui se comporte pareil partout.
-  Pour vos propres workflows, préférez le nœud `python` aux commandes propres à un système.
+- **Les démos fournies sont portables** : chemins en `/` et nœud `python` pour tout ce qui dépend du système
+  (comptage de lignes, tests, calculs). Seules des commandes identiques partout (`git`) restent dans des étapes
+  `shell`. Pour vos workflows, faites de même : chemins en `/`, et une étape `python` plutôt qu'une commande
+  propre à `cmd.exe` ou à `bash`. Ne chaînez pas avec `&` (sous bash il lance en arrière-plan) : utilisez `&&`.
 
 ### Écrire un workflow : quels mots-clés ai-je le droit d'utiliser ?
 
@@ -141,7 +141,7 @@ Workflow en français (14 étapes) : « Préparation du COPIL » pour un projet 
 | Note d'escalade au sponsor | CSAgent, **seulement si le statut est ROUGE** (`skip_if`) | branche conditionnelle |
 | Validation de la cheffe de projet | **Humain** (`human_approval`) | rien n'est diffusé sans accord ; refus = diffusion annulée |
 
-Lancer : `python app.py` (`python3` sous Linux), choisir « Préparation du COPIL », cliquer sur Run. Livrables dans `tmp/copil/` (`tmp\copil\` sous Windows).
+Lancer : `python app.py` (`python3` sous Linux), choisir « Préparation du COPIL », cliquer sur Run. Livrables dans `tmp/copil/`.
 La date de référence (`date_reference`) est fixée au 16/10/2026 pour que la démo soit reproductible ; la modifier dans le YAML pour rejouer à une autre date.
 
 ---

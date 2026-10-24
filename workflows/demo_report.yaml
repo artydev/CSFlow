@@ -1,9 +1,9 @@
 # yaml-language-server: $schema=../csflow.schema.json
 name: sales-report-pipeline
-description: Écrit un CSV, CSAgent l'analyse et produit un rapport markdown, puis l'affiche (Windows).
+description: Écrit un CSV, CSAgent l'analyse et produit un rapport markdown, puis l'affiche.
 
-# Windows : chemins RELATIFS au dossier workflow\ (CSAgent n'écrit que dans son
-# dossier courant — lance-le depuis workflow\ avec start_agent.bat).
+# Chemins RELATIFS au dossier de CSFlow, écrits avec « / » (valable sous Windows et Linux).
+# CSAgent n'écrit que dans son dossier courant : lancez-le depuis le dossier de CSFlow (start_agent.bat / .sh).
 
 steps:
 
@@ -11,7 +11,7 @@ steps:
   - id: create_data
     type: file_write
     description: Création des données
-    path: 'tmp\sales.csv'
+    path: 'tmp/sales.csv'
     content: |
       date,product,units,revenue
       2026-10-01,Widget A,145,3200.00
@@ -35,11 +35,11 @@ steps:
     type: agent
     description: Analyse par CSAgent
     prompt: |
-      Read the CSV file at tmp/sales.csv (relative path, Windows machine).
+      Read the CSV file at tmp/sales.csv (relative path).
       Analyse the sales data and write a concise markdown report to tmp/report.md.
 
       Use only relative paths: you can only read and write inside the current directory.
-      Do NOT use absolute paths such as C:\temp.
+      Do NOT use absolute paths such as C:/temp or /tmp.
 
       The report must include:
       - A one-line executive summary
@@ -54,13 +54,14 @@ steps:
   - id: read_report
     type: file_read
     description: Lecture du rapport
-    path: 'tmp\report.md'
+    path: 'tmp/report.md'
 
-  # ── 4. compter les lignes (cmd : robuste, quels que soient les caractères) ──
+  # ── 4. compter les lignes (Python : même résultat sous Windows et Linux) ─────
   - id: line_count
-    type: shell
+    type: python
     description: Comptage des lignes
-    cmd: 'type tmp\report.md | find /c /v ""'
+    code: |
+      print(len(open('tmp/report.md', encoding='utf-8').read().splitlines()))
 
   # ── 5. afficher le rapport ──────────────────────────────────────────────────
   - id: print_report
@@ -68,6 +69,6 @@ steps:
     description: Affichage du rapport
     level: success
     message: |
-      Rapport prêt → tmp\report.md  ({{line_count.output}} lignes)
+      Rapport prêt → tmp/report.md  ({{line_count.output}} lignes)
 
       {{read_report.output}}

@@ -39,9 +39,9 @@ Principe de conception : **Python orchestre, l'IA lit et rédige, l'humain déci
 
 ### Environnement
 
-- Windows en priorité (`cmd.exe`), mais Linux/macOS fonctionnent (`bash`).
+- Windows et Linux/WSL sont pris en charge (`cmd.exe` sous Windows, `bash` ailleurs). Écris des workflows **portables** : chemins en `/` et, dès que possible, des étapes `python` plutôt que des commandes propres à un système (voir « Portabilité »).
 - Application compilée possible (`CSFlow.exe`, Nuitka) : **aucun Python n'est alors installé** sur le poste. Dans ce cas, utilise `type: python` (interpréteur embarqué) et **jamais** `cmd: 'python ...'` dans un `shell`.
-- Le dossier de travail est celui de l'exe (ou de `app.py`) ; les chemins relatifs (`tmp\...`) partent de là. Les workflows sont dans `workflows\`.
+- Le dossier de travail est celui de l'exe (ou de `app.py`) ; les chemins relatifs (`tmp/...`) partent de là. Les workflows sont dans `workflows\`.
 
 ---
 
@@ -53,7 +53,7 @@ name: Nom affiché dans l'interface
 description: Une phrase décrivant le workflow.
 
 inputs:                 # facultatif : variables globales
-  projet: 'tmp\demo'
+  projet: 'tmp/demo'
 
 steps:                  # OBLIGATOIRE : liste non vide
   - id: premiere
@@ -218,7 +218,7 @@ Règles d'or pour les prompts :
 - Sur un poste **sans Python**, ajoute : « N'exécute rien (ni `python` ni `py`), utilise seulement `read_file` / `write_file` / `edit_file` ; le workflow relance lui-même le script. »
 - **Interdis d'inventer** : « Chaque chiffre doit provenir des fichiers ; n'invente rien. » Fournis les chiffres calculés via `{{id.output}}`.
 - Pour qu'il corrige du code sans toucher aux tests : « Corrige `x.py` UNIQUEMENT ; ne modifie jamais les tests. »
-- Quand `auto_confirm` est absent et que CSAgent n'est pas lancé avec `--yes`, chaque écriture demande une validation humaine dans l'interface. Met `auto_confirm: true` pour un enchaînement fluide **uniquement si le périmètre est inoffensif** (dossier `tmp\`).
+- Quand `auto_confirm` est absent et que CSAgent n'est pas lancé avec `--yes`, chaque écriture demande une validation humaine dans l'interface. Met `auto_confirm: true` pour un enchaînement fluide **uniquement si le périmètre est inoffensif** (dossier `tmp/`).
 
 ### 5.2 `python` — script Python avec l'interpréteur embarqué
 | Clé | Obl. | Rôle |
@@ -239,14 +239,14 @@ Script écrit par le workflow puis exécuté :
 ```yaml
 - id: ecrire_script
   type: file_write
-  path: 'tmp\calc.py'
+  path: 'tmp/calc.py'
   content: |
     import sys
     total = sum(float(x) for x in sys.argv[1:])
     print(round(total, 2))
 - id: calcul
   type: python
-  script: 'tmp\calc.py'
+  script: 'tmp/calc.py'
   args: ['12.5', '7.25']
 ```
 Code inline (tests unittest) avec dossier de travail du projet :
@@ -269,7 +269,8 @@ Code inline (tests unittest) avec dossier de travail du projet :
 | `timeout` | non | secondes (défaut 60) |
 
 Sorties : `output` (stdout+stderr), `stdout`, `stderr`, `returncode`, `status`. Code ≠ 0 = erreur.
-- **Windows : entoure la commande de quotes simples YAML** (`cmd: 'dir tmp\*.csv'`) pour que `\` reste un simple caractère.
+- **Portabilité :** écris les chemins avec `/` (`tmp/data.csv`) : cela marche sous Windows et Linux pour `file_*`, `python`, les `args` et les prompts d'agent. Évite les commandes propres à un système (`type`, `dir`, `find /c`, `cat`, `wc`…) : pour compter, filtrer ou lire, utilise une étape `python` ou `transform`. Les commandes identiques partout (`git`, `dotnet`, `npm`) vont dans `shell`.
+- Si tu dois quand même écrire un `\` (commande `cmd.exe`), entoure la commande de **quotes simples** YAML : `cmd: 'dir tmp\*.csv'`. Entre quotes doubles, `\` est un échappement. Ne chaîne pas avec `&` (sous bash, il lance en arrière-plan) : utilise `&&`.
 - Enchaînement : `cd /d dossier && commande 2>&1`.
 - N'utilise **pas** `python`/`py` ici si Python peut être absent → `type: python`.
 - Sortie native `cmd` (dir, type…) décodée avec la page de code OEM.
@@ -305,9 +306,9 @@ Utilise un bloc littéral `|` pour du contenu multiligne (l'indentation du bloc 
 
 | Sujet | Règle |
 |---|---|
-| Dossier de travail | celui de `CSFlow.exe` / `app.py`. Contient `workflows\`, `tmp\`, `csflow.schema.json`, `start_agent.bat`. |
-| Chemins | **toujours relatifs** (`tmp\copil\kpi.py`). Les `/` marchent aussi pour `file_*`, `python` et dans les prompts d'agent. |
-| Zone de travail | écris les fichiers générés sous `tmp\` ; ne touche pas à `workflows\`. |
+| Dossier de travail | celui de `CSFlow.exe` (ou `CSFlow` sous Linux) / `app.py`. Contient `workflows/`, `tmp/`, `csflow.schema.json`, `start_agent.bat` (`.sh` sous Linux). |
+| Chemins | **toujours relatifs**, écrits avec `/` (`tmp/copil/kpi.py`) : valable sous Windows et Linux, pour `file_*`, `python` et les prompts d'agent. |
+| Zone de travail | écris les fichiers générés sous `tmp/` ; ne touche pas à `workflows/`. |
 | CSAgent | doit être lancé **depuis le même dossier** (`start_agent.bat` à côté de l'exe : lance CSAgent puis CSFlow, arrête CSAgent à la fermeture). Sinon ses fichiers atterrissent ailleurs et `file_read` ne les trouve pas. |
 | Clé d'API | variable `ALBERT_API_KEY` définie avant le lancement ; ne l'écris jamais dans un workflow. |
 | Secrets | `{{env.NOM}}` uniquement. |
@@ -335,7 +336,7 @@ name: Squelette CSFlow
 description: Préparer des données, calculer en Python, faire rédiger par CSAgent, valider, terminer.
 
 inputs:
-  dossier: 'tmp\demo'
+  dossier: 'tmp/demo'
 
 steps:
   - id: donnees
@@ -366,7 +367,7 @@ steps:
   - id: verif
     type: file_read
     description: Vérifier le livrable
-    path: 'tmp\demo\synthese.md'
+    path: 'tmp/demo/synthese.md'
 
   - id: validation
     type: human_approval
@@ -400,7 +401,7 @@ steps:
 
 ## 8. Pièges classiques (et comment les éviter)
 
-1. **Quotes des chemins Windows** : `'tmp\x.md'` (quotes **simples**). Avec `"..."` le `\` est interprété par YAML (`\t`, `\n`…).
+1. **Séparateurs de chemin** : écris `tmp/x.md` (portable). Si un `\` est inévitable, mets des quotes **simples** : avec `"..."` YAML l'interprète (`\t`, `\n`…).
 2. **Deux-points dans un texte** : `description: "Étape : analyse"` (entre guillemets), sinon YAML croit à une nouvelle clé.
 3. **Tabulations** interdites : 2 espaces par niveau.
 4. **Branches sans `next`** : la branche « approuvé » retombe sur la branche « rejeté ». Termine par `next:` ou `end`.
@@ -429,10 +430,10 @@ Depuis le dossier de l'application (`workflow\`) :
 
 | Commande | Effet |
 |---|---|
-| `python engine.py --check workflows\*.yaml` | valide sans exécuter ; code de sortie 1 s'il y a une erreur |
+| `python engine.py --check workflows/*.yaml` | valide sans exécuter ; code de sortie 1 s'il y a une erreur |
 | `python engine.py --nodes` / `--nodes --md` | liste les types et paramètres (source de vérité) |
 | `python engine.py --schema` | schéma JSON (`csflow.schema.json`) pour VS Code |
-| `python engine.py workflows\mon.yaml` | exécute en terminal |
+| `python engine.py workflows/mon.yaml` | exécute en terminal |
 | `python app.py` ou `CSFlow.exe` | lance l'interface |
 
 Ce que la validation détecte : YAML invalide, `steps` vide/absent, étape non-dictionnaire, `id` manquant (avertissement) ou en double (erreur), `type` manquant/inconnu (erreur + suggestion), clé inconnue (avertissement + suggestion), paramètre **obligatoire** manquant (erreur), `next`/`on_approve`/`on_reject` visant une étape inexistante (erreur + suggestion), branche `human_approval` sans cible (avertissement), variable `{{x}}` ne correspondant à aucune étape ni entrée (avertissement).
@@ -450,7 +451,7 @@ Dans VS Code, ajoute en première ligne : `# yaml-language-server: $schema=../cs
 - [ ] Chaque `type` fait partie des 11 : `agent shell python transform file_read file_write http_get http_post human_approval log end`.
 - [ ] Tous les paramètres obligatoires sont présents (`prompt`, `cmd`, `path`, `content`, `url`, `expression`, `message` pour `log`).
 - [ ] Aucune clé inventée ; pas de faute de frappe.
-- [ ] Chemins **relatifs**, quotes **simples** pour les `\` Windows.
+- [ ] Chemins **relatifs** avec `/` (portables) ; pas de commande propre à un système quand une étape `python` suffit.
 - [ ] Les `{{variables}}` référencent des étapes **antérieures** et non ignorées, ou des `inputs`.
 - [ ] Pas de `{{`/`}}` littéraux dans `content`/`code`/`prompt`.
 - [ ] `skip_if` : texte entre quotes, nombre sans quotes, aucune fonction intégrée.

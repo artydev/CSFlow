@@ -1,10 +1,9 @@
 # yaml-language-server: $schema=../csflow.schema.json
 name: auto-fix-demo
-description: Crée un script Python cassé, l'exécute, demande à CSAgent de corriger les bugs, puis vérifie (Windows).
+description: Crée un script Python cassé, l'exécute, demande à CSAgent de corriger les bugs, puis vérifie.
 
-# Windows : les chemins sont RELATIFS au dossier workflow\ (CSAgent n'écrit que dans
-# son dossier courant — lance-le depuis workflow\ avec start_agent.bat).
-# Dans les commandes shell, utiliser des quotes simples YAML : le "\" reste littéral.
+# Les chemins sont RELATIFS au dossier de CSFlow et s'écrivent avec « / » (valable sous Windows et Linux).
+# CSAgent n'écrit que dans son dossier courant : lancez-le depuis le dossier de CSFlow (start_agent.bat / .sh).
 
 steps:
 
@@ -12,7 +11,7 @@ steps:
   - id: create_broken_script
     type: file_write
     description: Création du script cassé
-    path: 'tmp\broken.py'
+    path: 'tmp/broken.py'
     content: |
       # Sales report — broken version (for demo purposes)
 
@@ -30,7 +29,7 @@ steps:
   - id: first_run
     type: python
     description: Première exécution (doit échouer)
-    script: 'tmp\broken.py'
+    script: 'tmp/broken.py'
     continue_on_error: true
 
   # ── 3. CSAgent corrige (ignoré si le script passait déjà) ───────────────────
@@ -39,7 +38,7 @@ steps:
     description: Correction par CSAgent
     skip_if: "{{first_run.returncode}} == 0"
     prompt: |
-      The Python script "tmp\broken.py" (Windows, relative path) failed with this error:
+      The Python script "tmp/broken.py" (relative path) failed with this error:
 
       {{first_run.output}}
 
@@ -54,7 +53,7 @@ steps:
   - id: verify_run
     type: python
     description: Vérification
-    script: 'tmp\broken.py'
+    script: 'tmp/broken.py'
 
   # ── 5. terminé ──────────────────────────────────────────────────────────────
   - id: done
