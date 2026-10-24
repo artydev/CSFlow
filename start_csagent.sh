@@ -19,13 +19,16 @@ if ! command -v "$CSAGENT_BIN" >/dev/null 2>&1; then
     echo " ERREUR : $CSAGENT_BIN est introuvable dans le PATH (adapte CSAGENT_BIN)."; exit 1
 fi
 if [ ! -f mcp.json ]; then
-    # Meme logique que start_csagent.bat : l'exe s'il est la, sinon le mode sources.
-    if   [ -x ./CSFlow ]; then cp mcp.json.example mcp.json
-    elif [ -f app.py ];   then cp mcp.linux.source.example mcp.json
-    else
-        echo " ERREUR : mcp.json introuvable (et ni CSFlow ni app.py a cote de ce fichier)."; exit 1
+    # exe a cote de ce fichier -> ./CSFlow ; sinon sources -> python3 app.py
+    if   [ -x ./CSFlow ]; then SRC=mcp.json.example
+    elif [ -f ./app.py ]; then SRC=mcp.linux.source.example
+    else echo " ERREUR : ni ./CSFlow ni app.py a cote de ce fichier."; exit 1; fi
+    if [ ! -f "$SRC" ]; then echo " ERREUR : $SRC introuvable."; exit 1; fi
+    if [ "$SRC" = mcp.linux.source.example ]; then
+        command -v python3 >/dev/null 2>&1 || { echo " ERREUR : python3 est introuvable."; exit 1; }
+        python3 -c "import yaml" 2>/dev/null || { echo " ERREUR : PyYAML manque (sudo apt install python3-yaml)."; exit 1; }
     fi
-    echo "  mcp.json cree (verifiez la commande si besoin)."
+    cp "$SRC" mcp.json; echo "  mcp.json cree depuis $SRC (verifiez la commande)."
 fi
 
 # Worker : memoire separee (--mem) pour ne pas melanger avec votre conversation
