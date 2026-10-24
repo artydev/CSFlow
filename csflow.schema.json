@@ -524,6 +524,9 @@
                   "integer",
                   "string"
                 ]
+              },
+              "shell": {
+                "description": "shell explicite : « bash », « sh » ou « pwsh » (défaut : le shell du système)"
               }
             },
             "required": [

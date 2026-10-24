@@ -1,6 +1,7 @@
 """nodes/shell_node.py — run a shell command."""
 
 import os
+import shutil
 import subprocess
 import sys
 from . import register
@@ -19,6 +20,7 @@ def _decode(raw: bytes) -> str:
 @register("shell", summary="Exécute une commande shell (cmd.exe sous Windows, bash ailleurs).", params={
     "cmd":     ("commande exécutée par cmd.exe (Windows) ou bash ; sorties : output, stdout, stderr, returncode", True),
     "timeout": ("secondes avant arrêt du processus (défaut 60)", False),
+    "shell":   ("shell explicite : « bash », « sh » ou « pwsh » (défaut : le shell du système)", False),
 })
 def shell(params: dict) -> dict:
     """
@@ -27,6 +29,8 @@ def shell(params: dict) -> dict:
     Params:
         cmd     (str): the command to run
         timeout (int): seconds before the process is killed (default 60)
+        shell   (str): force a specific shell ("bash", "sh" or "pwsh") instead of
+                       the platform default — useful for cross-platform workflows
 
     Output fields:
         output:     stdout + stderr combined
@@ -47,6 +51,19 @@ def shell(params: dict) -> dict:
     cmd     = params.get("cmd", "")
     timeout = int(params.get("timeout", 60))
 
+    forced = str(params.get("shell", "")).strip().lower()
+    if forced:
+        if forced not in ("bash", "sh", "pwsh"):
+            return {"output": f"shell « {forced} » non pris en charge (valeurs : bash, sh, pwsh)",
+                    "returncode": -1, "status": "error"}
+        exe = shutil.which(forced)
+        if not exe:
+            return {"output": f"shell « {forced} » introuvable sur cette machine",
+                    "returncode": -1, "status": "error"}
+        command, use_shell = [exe, "-c", cmd], False
+    else:
+        command, use_shell = cmd, True
+
     env = {**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"}
     extra = {}
     if sys.platform == "win32":
@@ -54,8 +71,8 @@ def shell(params: dict) -> dict:
 
     try:
         proc = subprocess.run(
-            cmd,
-            shell=True,
+            command,
+            shell=use_shell,
             capture_output=True,       # bytes — decoded below
             timeout=timeout,
             env=env,

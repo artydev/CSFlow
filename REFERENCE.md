@@ -87,6 +87,7 @@ Exécute une commande shell (cmd.exe sous Windows, bash ailleurs).
 
 - `cmd` *(obligatoire)* : commande exécutée par cmd.exe (Windows) ou bash ; sorties : output, stdout, stderr, returncode
 - `timeout` : secondes avant arrêt du processus (défaut 60)
+- `shell` : shell explicite : « bash », « sh » ou « pwsh » (défaut : le shell du système)
 
 ### transform
 Évalue une expression Python pour transformer des données.
