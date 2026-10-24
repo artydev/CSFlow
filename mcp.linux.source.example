@@ -1,0 +1,11 @@
+// Linux, depuis les sources (app.py a cote de ce fichier). CSAgent --mcp-config mcp.json
+// Cree automatiquement par start_csagent.sh quand aucun binaire CSFlow n'est a cote.
+{
+  "mcpServers": {
+    "csflow": {
+      "command": "python3",
+      "args": ["app.py", "--mcp"],
+      "cwd": "."
+    }
+  }
+}

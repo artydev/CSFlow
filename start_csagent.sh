@@ -19,8 +19,13 @@ if ! command -v "$CSAGENT_BIN" >/dev/null 2>&1; then
     echo " ERREUR : $CSAGENT_BIN est introuvable dans le PATH (adapte CSAGENT_BIN)."; exit 1
 fi
 if [ ! -f mcp.json ]; then
-    if [ -f mcp.json.example ]; then cp mcp.json.example mcp.json; echo "  mcp.json cree depuis mcp.json.example (verifiez la commande)."
-    else echo " ERREUR : mcp.json introuvable."; exit 1; fi
+    # Meme logique que start_csagent.bat : l'exe s'il est la, sinon le mode sources.
+    if   [ -x ./CSFlow ]; then cp mcp.json.example mcp.json
+    elif [ -f app.py ];   then cp mcp.linux.source.example mcp.json
+    else
+        echo " ERREUR : mcp.json introuvable (et ni CSFlow ni app.py a cote de ce fichier)."; exit 1
+    fi
+    echo "  mcp.json cree (verifiez la commande si besoin)."
 fi
 
 # Worker : memoire separee (--mem) pour ne pas melanger avec votre conversation
