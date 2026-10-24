@@ -1,6 +1,6 @@
-# Poor Man's n8n — Python × CSAgent
+# CSFlow — Python × CSAgent
 
-> Workflow automation where Python wires the steps and CSAgent handles the reasoning.
+> Automatisation de workflows : Python enchaîne les étapes, CSAgent s'occupe du raisonnement.
 
 ---
 
@@ -115,7 +115,10 @@ La date de référence (`date_reference`) est fixée au 16/10/2026 pour que la d
 
 ---
 
-## What you will see
+## Ce que vous verrez
+
+Exemple de sortie en ligne de commande (`python engine.py workflows\demo_autofix.yaml`). Les messages des
+étapes (`Written … chars`, la réponse de l'agent) sont ceux produits par le programme.
 
 ```
 ╔══════════════════════════════════════════════════════════╗
@@ -156,65 +159,71 @@ La date de référence (`date_reference`) est fixée au 16/10/2026 pour que la d
 
 ---
 
-## How it works
+## Comment ça marche
 
 ```
 workflow.yaml
      │
      ▼
- engine.py ── resolves {{variables}} ── dispatches to node handlers
+ engine.py ── résout les {{variables}} ── confie l'étape au bon nœud
      │
      ├── file_write / file_read    →  Python pathlib
      ├── shell                     →  Python subprocess
+     ├── python                    →  interpréteur embarqué (aucun Python à installer)
      ├── http_get / http_post      →  Python urllib
-     ├── transform                 →  Python eval (restricted)
-     ├── log                       →  print()
-     └── agent                     →  CSAgent /api/chat  (SSE stream)
+     ├── transform                 →  Python eval (restreint)
+     ├── log / end                 →  affichage, fin du workflow
+     ├── human_approval            →  pause jusqu'à la décision d'un humain
+     └── agent                     →  CSAgent /api/chat  (flux SSE)
                                            ↑
-                                     C# reasoning engine
-                                     reads files, runs shell,
-                                     writes fixes back to disk
+                                     moteur de raisonnement en C#
+                                     lit des fichiers, lance des commandes,
+                                     réécrit les corrections sur le disque
 ```
 
-The `agent` node is what sets this apart from a plain shell script. It receives
-the prompt (with variables already resolved) and autonomously reasons through
-it — reading files, running commands, rewriting code — while streaming every
-thought and tool call back to the terminal.
+Le nœud `agent` distingue CSFlow d'un simple script shell. Il reçoit l'instruction (dont les variables
+sont déjà résolues) et raisonne seul pour y répondre — lire des fichiers, lancer des commandes,
+réécrire du code — tout en renvoyant au terminal chaque réflexion et chaque appel d'outil.
 
 ---
 
-## Node reference
+## Référence des nœuds
 
-| Type | What it does | Key params |
+| Type | Rôle | Paramètres principaux |
 |---|---|---|
-| `file_read` | Read a file | `path` |
-| `file_write` | Write a file (creates dirs) | `path`, `content` |
-| `shell` | Run a shell command | `cmd`, `timeout` |
-| `http_get` | HTTP GET | `url`, `headers` |
-| `http_post` | HTTP POST | `url`, `body`, `headers` |
-| `agent` | CSAgent reasoning step | `prompt`, `csagent_url`, `csagent_key` |
-| `transform` | Python expression | `expression` |
-| `log` | Print a message | `message`, `level` |
+| `file_read` | Lire un fichier | `path` |
+| `file_write` | Écrire un fichier (crée les dossiers) | `path`, `content` |
+| `shell` | Lancer une commande shell | `cmd`, `timeout` |
+| `python` | Exécuter un script Python avec l'interpréteur embarqué | `script` ou `code`, `args`, `cwd`, `timeout` |
+| `http_get` | Requête HTTP GET | `url`, `headers`, `timeout` |
+| `http_post` | Requête HTTP POST | `url`, `body`, `headers`, `timeout` |
+| `agent` | Étape de raisonnement confiée à CSAgent | `prompt`, `csagent_url`, `csagent_key`, `timeout`, `auto_confirm` |
+| `transform` | Expression Python | `expression` |
+| `human_approval` | Pause jusqu'à l'accord ou au refus d'un humain | `message` (avec `on_approve` / `on_reject`) |
+| `log` | Afficher un message | `message`, `level` |
+| `end` | Terminer le workflow | `message` |
+
+La liste complète et à jour : `python engine.py --nodes`, ou `REFERENCE.md`.
 
 ---
 
-## Workflow syntax
+## Syntaxe d'un workflow
 
 ```yaml
-name: my-workflow
+name: mon-workflow
 
 steps:
 
-  - id: fetch                     # referenced as {{fetch.output}}
+  - id: fetch                     # référencé par {{fetch.output}}
     type: http_get
     url: "https://api.example.com/data"
 
   - id: process
     type: agent
-    skip_if: "{{fetch.status_code}} != 200"   # skip this step if condition is true
+    skip_if: "{{fetch.status_code}} != 200"   # étape ignorée si la condition est vraie
     prompt: |
-      Analyse this data: {{fetch.body}}
-      Write a summary to tmp/summary.md.
+      Analyse ces données : {{fetch.body}}
+      Écris un résumé dans tmp/summary.md.
 
   - id: read_back
     type: file_read
@@ -225,30 +234,30 @@ steps:
     message: "{{read_back.output}}"
 ```
 
-### Built-in variables
+### Variables intégrées
 
-| Token | Value |
+| Jeton | Valeur |
 |---|---|
-| `{{today}}` | Current date — `2026-10-16` |
-| `{{now}}` | Current datetime — `2026-10-16T13:45:00` |
-| `{{env.MY_VAR}}` | Environment variable |
+| `{{today}}` | Date du jour — `2026-10-16` |
+| `{{now}}` | Date et heure — `2026-10-16T13:45:00` |
+| `{{env.MA_VAR}}` | Variable d'environnement |
 
-### Step output fields
+### Champs de sortie d'une étape
 
-Every node returns at least `output` and `status`.  Node-specific extras:
+Chaque nœud renvoie au moins `output` et `status`. Champs propres à chaque nœud :
 
-| Node | Extra fields |
+| Nœud | Champs supplémentaires |
 |---|---|
-| `shell` | `stdout`, `stderr`, `returncode` (int) |
-| `http_get/post` | `body`, `status_code` (int) |
-| `file_read` | `content` (alias for `output`) |
+| `shell`, `python` | `stdout`, `stderr`, `returncode` (entier) |
+| `http_get` / `http_post` | `body`, `status_code` (entier) |
+| `file_read` | `content` (alias de `output`) |
 | `file_write` | `path` |
 | `agent` | `thoughts` |
-| `transform` | `value` (raw Python value) |
+| `transform` | `value` (valeur Python brute) |
 
 ### `skip_if`
 
-Any step can be skipped based on a condition:
+Toute étape peut être ignorée selon une condition :
 ```yaml
 skip_if: "{{prev.returncode}} == 0"
 skip_if: "{{fetch.status_code}} == 404"
@@ -256,7 +265,7 @@ skip_if: "{{fetch.status_code}} == 404"
 
 ### `continue_on_error`
 
-Set to `true` to keep the workflow running even when a step fails:
+Mettez `true` pour que le workflow continue même si l'étape échoue :
 ```yaml
 - id: first_attempt
   type: shell
@@ -266,23 +275,31 @@ Set to `true` to keep the workflow running even when a step fails:
 
 ---
 
-## Files
+## Fichiers
 
 ```
 workflow/
-├── app.py                   ← interface EEL + UmaiJS (python app.py)
-├── engine.py                ← workflow runner (--check, --nodes, --schema)
+├── app.py                   ← interface EEL (python app.py) ; mode MCP : app.py --mcp
+├── engine.py                ← exécuteur de workflows (--check, --nodes, --schema)
+├── mcp_server.py            ← serveur MCP (stdio) : CSAgent lance et suit les workflows
 ├── schema.py                ← vocabulaire du YAML : validation, aide, schéma JSON
 ├── csflow.schema.json       ← schéma pour l'autocomplétion VS Code (généré)
 ├── REFERENCE.md             ← liste des types et paramètres (générée)
-├── start_agent.bat          ← lance CSAgent depuis ce dossier
+├── CSFLOW_LLM_GUIDE.md      ← guide destiné aux assistants IA qui écrivent des workflows
+├── start_agent.bat / .sh    ← lance CSAgent (API) puis CSFlow, depuis ce dossier
+├── start_csagent.bat / .sh  ← mode MCP : worker CSAgent + CSAgent interactif qui pilote CSFlow
+├── mcp.json.example         ← config MCP (Linux, exe) ; mcp.windows.*.example, mcp.linux.source.example
+├── build_nuitka.bat / .sh   ← compilation en exécutable unique
+├── skills/                  ← skill CSAgent « CSFlow Workflows » (csflow.md, INDEX.md)
+├── tests/mcp_smoke.py       ← test du serveur MCP, sans CSAgent
 ├── ui/index.html            ← interface (Umai embarqué, aucun CDN)
 ├── nodes/
-│   ├── __init__.py          ← registry
+│   ├── __init__.py          ← registre des nœuds
 │   ├── file_node.py
 │   ├── shell_node.py
+│   ├── python_node.py       ← interpréteur embarqué
 │   ├── http_node.py
-│   ├── agent_node.py        ← CSAgent SSE integration
+│   ├── agent_node.py        ← intégration CSAgent (flux SSE)
 │   ├── log_node.py
 │   └── transform_node.py
 ├── workflows/
@@ -291,17 +308,19 @@ workflow/
 │   ├── demo_report.yaml     ← analyse un CSV → rapport markdown
 │   ├── demo_code_review.yaml← inspection + validation humaine + correction
 │   └── dev_fix_tests.yaml   ← tests → CSAgent corrige → re-test → validation → commit
-├── tmp/                     ← workflows write their artefacts here
+├── tmp/                     ← les workflows y écrivent leurs fichiers
 └── requirements.txt         ← pyyaml + eel
 ```
 
 ---
 
-## Requirements
+## Prérequis
 
-- Python 3.10+ et `pip install -r requirements.txt` (pyyaml + eel) **pour lancer depuis les sources** ; inutile avec l'exe compilé (`build_nuitka.bat`), qui embarque l'interpréteur (voir le nœud `python`)
-- [CSAgent](https://github.com/artydev/CSAgent) running with `--api --yes`
-- An `ALBERT_API_KEY` (or any OpenAI-compatible endpoint via `--endpoint`)
+- Python 3.10 ou plus récent et `pip install -r requirements.txt` (pyyaml + eel) **pour lancer depuis les sources** ;
+  inutile avec l'exe compilé (`build_nuitka.bat`), qui embarque l'interpréteur (voir le nœud `python`).
+  Pour le seul mode MCP depuis les sources, PyYAML suffit.
+- [CSAgent](https://github.com/artydev/CSAgent) lancé avec `--api --yes` (c'est ce que fait `start_agent.bat`).
+- Une clé `ALBERT_API_KEY` (ou n'importe quel point d'accès compatible OpenAI via `--endpoint`).
 
 ## Workflow développeur : `dev_fix_tests.yaml`
 
