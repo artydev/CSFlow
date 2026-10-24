@@ -67,3 +67,6 @@ csflow_worker/
 
 # Lanceur local CSAgent+OpenRouter — contient une clé API machine
 start_csagent_openrouter.bat
+
+# Config MCP locale (machine) — les modèles à versionner sont les fichiers *.example
+mcp.json
