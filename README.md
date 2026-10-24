@@ -382,6 +382,19 @@ Autres cas : depuis les sources sous Windows, `start_csagent.bat` choisit `mcp.w
 (`python.exe app.py --mcp`) ; sous Linux/WSL, `./start_csagent.sh` utilise `mcp.json.example` (`./CSFlow --mcp`).
 CSAgent lit la skill `skills/csflow.md` depuis son dossier de travail : lancez-le depuis le dossier de CSFlow.
 
+### Linux/WSL sans l'exe (depuis les sources)
+
+Sous Linux, Python est en général déjà installé : inutile de compiler l'exe. CSAgent lance alors
+`python3 app.py --mcp` au lieu de `./CSFlow --mcp` ; le serveur MCP est le même.
+
+- **Prérequis :** `python3` (3.10 ou plus récent) et PyYAML (`sudo apt install python3-yaml`, ou `pip install pyyaml`
+  dans un environnement virtuel). `eel` n'est **pas** nécessaire pour le mode MCP, seulement pour l'interface.
+- **Lancer :** depuis le dossier de CSFlow, `./start_csagent.sh`. Sans `./CSFlow` mais avec `app.py`, le script crée
+  `mcp.json` à partir de `mcp.linux.source.example` et vérifie `python3` et PyYAML.
+- **Fichiers :** `workflows/` et `tmp/` sont dans le dossier des sources, à côté de `app.py`. Le nœud `python`
+  utilise alors le `python3` du système au lieu de l'interpréteur embarqué.
+- Le worker CSAgent (`--api`, port 8080) reste nécessaire pour les étapes `agent`.
+
 ### Les quatre outils
 
 | Outil | Rôle |
