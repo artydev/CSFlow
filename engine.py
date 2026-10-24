@@ -13,6 +13,7 @@ Usage:
     python engine.py workflows/demo_code_review.yaml
 """
 
+import glob
 import os
 import re
 import sys
@@ -323,7 +324,12 @@ if __name__ == "__main__":
         sys.exit(0)
 
     if "--check" in args:                      # validation sans exécution
-        files = [a for a in args if not a.startswith("--")]
+        files = []
+        for a in args:
+            if a.startswith("--"):
+                continue
+            # cmd.exe (Windows) ne développe pas « * » : on le fait ici ; bash l'a déjà fait sous Linux
+            files += sorted(glob.glob(a)) or [a]
         if not files:
             print("\nUsage:  python engine.py --check workflows\\*.yaml\n")
             sys.exit(1)

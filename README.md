@@ -91,13 +91,15 @@ Il pèse environ 14 Mo sous Windows et 50 Mo sous Linux.
 Le vocabulaire est défini à un seul endroit : le décorateur `@register(..., params={...})` de chaque
 nœud (dossier `nodes/`), complété par les mots-clés communs de `schema.py`. Trois outils en découlent :
 
-```bat
-python engine.py --nodes                  :: liste les types d'étape et leurs paramètres (REFERENCE.md = même contenu)
-python engine.py --check workflows\*.yaml :: valide sans exécuter : types inconnus, clé mal orthographiée,
-                                          :: paramètre obligatoire absent, next / on_approve vers une étape inexistante,
-                                          :: {{variable}} qui ne correspond à rien. Chaque message donne la ligne.
-python engine.py --schema > csflow.schema.json   :: régénère le schéma JSON de l'éditeur
 ```
+python engine.py --nodes                   # liste les types d'étape et leurs paramètres (REFERENCE.md = même contenu)
+python engine.py --check "workflows/*.yaml"   # valide sans exécuter : types inconnus, clé mal orthographiée,
+                                           # paramètre obligatoire absent, next / on_approve vers une étape inexistante,
+                                           # {{variable}} qui ne correspond à rien. Chaque message donne la ligne.
+python engine.py --schema > csflow.schema.json   # régénère le schéma JSON de l'éditeur
+```
+
+(Sous Linux, `python3` ; les `/` fonctionnent aussi sous Windows.)
 
 - **Autocomplétion dans VS Code** : installer l'extension « YAML » (Red Hat). La première ligne de chaque
   workflow, `# yaml-language-server: $schema=../csflow.schema.json`, suffit : VS Code propose les types,
@@ -139,7 +141,7 @@ Workflow en français (14 étapes) : « Préparation du COPIL » pour un projet 
 | Note d'escalade au sponsor | CSAgent, **seulement si le statut est ROUGE** (`skip_if`) | branche conditionnelle |
 | Validation de la cheffe de projet | **Humain** (`human_approval`) | rien n'est diffusé sans accord ; refus = diffusion annulée |
 
-Lancer : `python app.py`, choisir « Préparation du COPIL », cliquer sur Run. Livrables dans `tmp\copil\`.
+Lancer : `python app.py` (`python3` sous Linux), choisir « Préparation du COPIL », cliquer sur Run. Livrables dans `tmp/copil/` (`tmp\copil\` sous Windows).
 La date de référence (`date_reference`) est fixée au 16/10/2026 pour que la démo soit reproductible ; la modifier dans le YAML pour rejouer à une autre date.
 
 ---
@@ -353,7 +355,7 @@ workflow/
 
 ## Workflow développeur : `dev_fix_tests.yaml`
 
-Lance les tests d'un petit projet (dépôt git dans `tmp\devfix`), laisse CSAgent corriger le code
+Lance les tests d'un petit projet (dépôt git dans `tmp/devfix`), laisse CSAgent corriger le code
 sans toucher aux tests, relance les tests, affiche `git diff --stat`, puis committe seulement
 après votre validation (rejet : `git checkout`). Pour votre code, changez `inputs.project` et la
 commande de test (`python -m unittest`).
@@ -383,9 +385,9 @@ Python sur le poste : le nœud `python` les exécute avec l'interpréteur **emba
 ```yaml
 - id: indicateurs
   type: python
-  script: 'tmp\copil\kpi.py'            # ou  code: |  (Python inline)
-  args: ['tmp\copil\taches.csv', '{{date_reference}}']
-  # cwd: 'tmp\projet'   timeout: 60
+  script: 'tmp/copil/kpi.py'            # ou  code: |  (Python inline) ; « / » marche sous Windows et Linux
+  args: ['tmp/copil/taches.csv', '{{date_reference}}']
+  # cwd: 'tmp/projet'   timeout: 60
 ```
 
 Sorties identiques à `shell` : `output`, `stdout`, `stderr`, `returncode`. Dans l'exe compilé, CSFlow
