@@ -41,7 +41,7 @@ Principe de conception : **Python orchestre, l'IA lit et rédige, l'humain déci
 
 - Windows en priorité (`cmd.exe`), mais Linux/macOS fonctionnent (`bash`).
 - Application compilée possible (`CSFlow.exe`, Nuitka) : **aucun Python n'est alors installé** sur le poste. Dans ce cas, utilise `type: python` (interpréteur embarqué) et **jamais** `cmd: 'python ...'` dans un `shell`.
-- Le dossier de travail est celui de l'exe (ou de `app.py`) ; les chemins relatifs (`tmp\...`) partent de là. Les workflows sont dans `workflows\`.
+- Le dossier de travail est celui de l'exe (ou de `app.py`) ; les chemins relatifs (`tmp/...`) partent de là. Les workflows sont dans `workflows/`.
 
 ---
 
@@ -213,7 +213,7 @@ Sorties : `output` (sa dernière réponse), `thoughts` (tout son raisonnement).
 
 Règles d'or pour les prompts :
 - Le prompt voyage dans l'**URL de la requête** : reste **bref et précis** (quelques dizaines de lignes max).
-- **Chemins relatifs uniquement** : CSAgent n'écrit que dans son dossier courant, qui doit être **le même** que celui de CSFlow (lancement par `start_agent.bat` placé à côté de `CSFlow.exe`). Un chemin absolu ou hors dossier échoue.
+- **Chemins relatifs uniquement** : CSAgent n'écrit que dans son dossier courant, qui doit être **le même** que celui de CSFlow (lancement par `start_agent.sh` / `start_agent.bat` dans ce dossier). Un chemin absolu ou hors dossier échoue.
 - Dis **exactement quel fichier écrire** (`Écris tmp/copil/rapport.md …`) puis **relis-le** avec un `file_read` pour vérifier qu'il existe : l'agent peut répondre en texte sans écrire.
 - Sur un poste **sans Python**, ajoute : « N'exécute rien (ni `python` ni `py`), utilise seulement `read_file` / `write_file` / `edit_file` ; le workflow relance lui-même le script. »
 - **Interdis d'inventer** : « Chaque chiffre doit provenir des fichiers ; n'invente rien. » Fournis les chiffres calculés via `{{id.output}}`.
@@ -267,9 +267,11 @@ Code inline (tests unittest) avec dossier de travail du projet :
 |---|---|---|
 | `cmd` | **oui** | commande exécutée par `cmd.exe` (Windows) ou `bash` |
 | `timeout` | non | secondes (défaut 60) |
+| `shell` | non | shell explicite : `bash`, `sh` ou `pwsh` (défaut : le shell du système) |
 
 Sorties : `output` (stdout+stderr), `stdout`, `stderr`, `returncode`, `status`. Code ≠ 0 = erreur.
-- **Windows : entoure la commande de quotes simples YAML** (`cmd: 'dir tmp\*.csv'`) pour que `\` reste un simple caractère.
+- Entoure la commande de quotes simples YAML (`cmd: 'dir tmp\*.csv'`) pour que `\` reste un simple caractère.
+- Workflow portable Windows **et** Linux : préférez des commandes portables (`git`, `python`) ; `type`/`dir`/`find` sont Windows, `wc`/`cat` sont POSIX — ou forcez un shell avec `shell:`.
 - Enchaînement : `cd /d dossier && commande 2>&1`.
 - N'utilise **pas** `python`/`py` ici si Python peut être absent → `type: python`.
 - Sortie native `cmd` (dir, type…) décodée avec la page de code OEM.
@@ -305,10 +307,10 @@ Utilise un bloc littéral `|` pour du contenu multiligne (l'indentation du bloc 
 
 | Sujet | Règle |
 |---|---|
-| Dossier de travail | celui de `CSFlow.exe` / `app.py`. Contient `workflows\`, `tmp\`, `csflow.schema.json`, `start_agent.bat`. |
-| Chemins | **toujours relatifs** (`tmp\copil\kpi.py`). Les `/` marchent aussi pour `file_*`, `python` et dans les prompts d'agent. |
-| Zone de travail | écris les fichiers générés sous `tmp\` ; ne touche pas à `workflows\`. |
-| CSAgent | doit être lancé **depuis le même dossier** (`start_agent.bat` à côté de l'exe : lance CSAgent puis CSFlow, arrête CSAgent à la fermeture). Sinon ses fichiers atterrissent ailleurs et `file_read` ne les trouve pas. |
+| Dossier de travail | celui de `CSFlow.exe` / `app.py`. Contient `workflows/`, `tmp/`, `csflow.schema.json`, `start_agent.sh` / `start_agent.bat`. |
+| Chemins | **toujours relatifs** (`tmp/copil/kpi.py`) ; sépare-les par « / » : identiques sous Windows et Linux (un `\` devient un caractère du nom de fichier sous Linux). |
+| Zone de travail | écris les fichiers générés sous `tmp/` ; ne touche pas à `workflows/`. |
+| CSAgent | doit être lancé **depuis le même dossier** (`start_agent.sh` / `start_agent.bat` : lance CSAgent puis CSFlow, arrête CSAgent à la fermeture). Sinon ses fichiers atterrissent ailleurs et `file_read` ne les trouve pas. |
 | Clé d'API | variable `ALBERT_API_KEY` définie avant le lancement ; ne l'écris jamais dans un workflow. |
 | Secrets | `{{env.NOM}}` uniquement. |
 
@@ -400,7 +402,7 @@ steps:
 
 ## 8. Pièges classiques (et comment les éviter)
 
-1. **Quotes des chemins Windows** : `'tmp\x.md'` (quotes **simples**). Avec `"..."` le `\` est interprété par YAML (`\t`, `\n`…).
+1. **Backslash dans un chemin** : utilisez `/` (portable) ; si un `\` est vraiment nécessaire, quotes **simples** (`'tmp\x.md'`) : avec `"..."` il est interprété par YAML (`\t`, `\n`…). Sous Linux, un `\` non échapé devient un caractère du nom de fichier.
 2. **Deux-points dans un texte** : `description: "Étape : analyse"` (entre guillemets), sinon YAML croit à une nouvelle clé.
 3. **Tabulations** interdites : 2 espaces par niveau.
 4. **Branches sans `next`** : la branche « approuvé » retombe sur la branche « rejeté ». Termine par `next:` ou `end`.
@@ -409,7 +411,7 @@ steps:
 7. **`skip_if` sans quotes autour d'un texte**, ou avec `len()`/`int()` : jamais ignorée (cf. 4.1).
 8. **`shell` + `python`** sur poste sans Python : échec. Utilise `type: python`.
 9. **Agent qui exécute du code** sur un poste sans Python : il perd du temps à chercher Python. Interdis-lui d'exécuter.
-10. **Agent qui n'écrit pas / écrit ailleurs** : CSAgent lancé depuis un autre dossier, ou réponse en texte. → `file_read` de contrôle + `start_agent.bat` à côté de l'exe.
+10. **Agent qui n'écrit pas / écrit ailleurs** : CSAgent lancé depuis un autre dossier, ou réponse en texte. → `file_read` de contrôle + `start_agent.sh` / `start_agent.bat` dans ce dossier.
 11. **Chemins absolus donnés à l'agent** : refusés (il n'écrit que dans son dossier courant).
 12. **Prompts énormes** : ils passent dans l'URL ; fournis les données via des **fichiers** que l'agent lit.
 13. **Chiffres « devinés » par l'IA** : calcule-les (`python`/`transform`) et injecte-les ; interdis d'inventer.
@@ -450,7 +452,7 @@ Dans VS Code, ajoute en première ligne : `# yaml-language-server: $schema=../cs
 - [ ] Chaque `type` fait partie des 11 : `agent shell python transform file_read file_write http_get http_post human_approval log end`.
 - [ ] Tous les paramètres obligatoires sont présents (`prompt`, `cmd`, `path`, `content`, `url`, `expression`, `message` pour `log`).
 - [ ] Aucune clé inventée ; pas de faute de frappe.
-- [ ] Chemins **relatifs**, quotes **simples** pour les `\` Windows.
+- [ ] Chemins **relatifs** avec « / » (identiques Windows et Linux).
 - [ ] Les `{{variables}}` référencent des étapes **antérieures** et non ignorées, ou des `inputs`.
 - [ ] Pas de `{{`/`}}` littéraux dans `content`/`code`/`prompt`.
 - [ ] `skip_if` : texte entre quotes, nombre sans quotes, aucune fonction intégrée.

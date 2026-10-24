@@ -48,14 +48,35 @@ python engine.py workflows\demo_report.yaml
 python engine.py workflows\demo_code_review.yaml
 ```
 
-### Conventions Windows des workflows
+### Sous Linux
 
-- Les chemins sont **relatifs** à `workflow\` (`tmp\sales.csv`), jamais absolus (`C:\temp\...`) :
+Même procédure, les scripts `.sh` font le travail des `.bat` — et **sans binaire** :
+`python3 engine.py …` et `python3 app.py --mcp` remplacent l'exécutable `CSFlow`.
+
+```bash
+pip install -r requirements.txt
+export ALBERT_API_KEY=ta-cle
+./start_agent.sh                        # csagent --api puis l'interface (python3 app.py)
+python3 engine.py workflows/demo_autofix.yaml
+```
+
+- `csagent` doit être dans le PATH (`.NET 10`, multiplateforme : binaire publié ou `dotnet`).
+- Machine sans navigateur (serveur, SSH) : `CSFLOW_NO_BROWSER=1 python3 app.py` —
+  l'URL s'affiche, vous l'ouvrez dans le navigateur de votre choix.
+- Mode MCP : sans binaire à côté, `./start_csagent.sh` câble `mcp.json` en mode sources
+  (`python3 app.py --mcp`, voir `mcp.linux.source.example`).
+
+### Conventions des workflows (Windows et Linux)
+
+- Les chemins sont **relatifs** au dossier CSFlow/ (`tmp/sales.csv`), jamais absolus (`C:\temp\...`, `/home/...`) :
   l'agent ne peut pas écrire en dehors de son dossier courant.
-- Dans le YAML, les commandes shell contenant `\` s'écrivent entre **quotes simples** :
-  `cmd: 'python tmp\broken.py'` (en quotes doubles, `\` serait interprété comme un échappement).
-- Les commandes shell sont exécutées par `cmd.exe` (`type`, `dir`, `find`, ...).
-  Pour compter les lignes d'un fichier : `type fichier | find /c /v ""`.
+- Séparez les chemins par « / » : `tmp/sales.csv` fonctionne sur Windows comme sur Linux
+  (un backslash dans un chemin devient un caractère du nom de fichier sous Linux).
+- Les commandes `shell` tournent sous `cmd.exe` sur Windows et `bash` sous Linux :
+  préférez des commandes portables (`git`, `python`) ; pour forcer un shell précis,
+  utilisez le paramètre `shell` du nœud (`bash`, `sh`, `pwsh`).
+- Dans le YAML, les commandes contenant `\` s'écrivent entre **quotes simples**
+  (en quotes doubles, `\` serait interprété comme un échappement).
 
 ### Écrire un workflow : quels mots-clés ai-je le droit d'utiliser ?
 
@@ -189,7 +210,7 @@ thought and tool call back to the terminal.
 |---|---|---|
 | `file_read` | Read a file | `path` |
 | `file_write` | Write a file (creates dirs) | `path`, `content` |
-| `shell` | Run a shell command | `cmd`, `timeout` |
+| `shell` | Run a shell command | `cmd`, `timeout`, `shell` |
 | `http_get` | HTTP GET | `url`, `headers` |
 | `http_post` | HTTP POST | `url`, `body`, `headers` |
 | `agent` | CSAgent reasoning step | `prompt`, `csagent_url`, `csagent_key` |
@@ -378,8 +399,10 @@ Vous ──► CSAgent interactif (sans --yes) ──MCP──► CSFlow --mcp �
 3. Dans CSAgent : « Liste les workflows CSFlow », « Vérifie demo_report », « Lance demo_report ».
    Chaque appel MCP vous est demandé (CSAgent interactif lancé sans `--yes`).
 
-Autres cas : depuis les sources sous Windows, `start_csagent.bat` choisit `mcp.windows.source.example`
-(`python.exe app.py --mcp`) ; sous Linux/WSL, `./start_csagent.sh` utilise `mcp.json.example` (`./CSFlow --mcp`).
+Autres cas : depuis les sources, les scripts choisissent la bonne config MCP — sous Windows,
+`start_csagent.bat` copie `mcp.windows.source.example` (`python.exe app.py --mcp`) ; sous Linux,
+`./start_csagent.sh` copie `mcp.json.example` (`./CSFlow --mcp`) si l'exe est à côté, sinon
+`mcp.linux.source.example` (`python3 app.py --mcp`).
 CSAgent lit la skill `skills/csflow.md` depuis son dossier de travail : lancez-le depuis le dossier de CSFlow.
 
 ### Les quatre outils
