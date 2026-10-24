@@ -277,11 +277,21 @@ if __name__ == "__main__":
     _port = int(os.environ.get("CSFLOW_PORT") or 0) or _free_port()
     _url = f"http://localhost:{_port}/index.html"
     _headless = os.environ.get("CSFLOW_NO_BROWSER") == "1"      # WSL / serveur : on ouvre l'URL soi-même
-    _mode = None if _headless else _pick_browser()
+    _windows = sys.platform.startswith("win")
+    _mode = None if (_headless or not _windows) else _pick_browser()
     print(f"CSFlow : {_url}", flush=True)
+    # Windows : Eel ouvre Edge ou Chrome. Linux / WSL / macOS : ui_launcher choisit (Chromium, navigateur de
+    # Windows sous WSL, Firefox…) et évite les navigateurs qui affichent mal la page (Epiphany).
     eel.start("index.html", mode=_mode or False, port=_port, size=(1440, 820), block=False)
-    if _mode is None and not _headless:
-        import webbrowser
-        webbrowser.open(_url)
+    if not _headless:
+        if _windows:
+            if _mode is None:
+                import webbrowser
+                webbrowser.open(_url)
+        else:
+            from ui_launcher import open_ui, HINT
+            eel.sleep(0.5)                # laisse le serveur démarrer avant d'ouvrir la page
+            if open_ui(_url, (1440, 820)) == "none":
+                print(HINT, flush=True)
     while True:                      # eel.sleep (et non time.sleep) : le serveur tourne dans un greenlet
         eel.sleep(1.0)

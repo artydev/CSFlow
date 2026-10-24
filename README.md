@@ -77,8 +77,12 @@ python3 engine.py workflows/demo_autofix.yaml
 - Mode MCP : sans binaire à côté, `./start_csagent.sh` câble `mcp.json` en mode sources
   (`python3 app.py --mcp`, voir `mcp.linux.source.example`).
 
-Sous WSL ou sur un serveur sans écran, l'interface a besoin d'un navigateur : voir `CSFLOW_NO_BROWSER` et
-`CSFLOW_PORT` (le script affiche l'adresse `http://localhost:<port>/index.html` à ouvrir à la main).
+**Navigateur sous Linux / WSL.** CSFlow choisit dans cet ordre : un navigateur Chromium (`chromium`,
+`google-chrome`, `microsoft-edge`, `brave-browser`…) en fenêtre d'application ; sous **WSL**, le navigateur de
+Windows (`wslview` ou `explorer.exe`, `localhost` étant relayé vers WSL2) ; Firefox ; sinon le navigateur par
+défaut, **sauf Epiphany / GNOME Web**, qui affiche « Page Unresponsive ». Si rien ne convient, CSFlow affiche
+l'adresse `http://localhost:<port>/index.html` et la marche à suivre (`sudo apt install chromium`).
+`CSFLOW_NO_BROWSER=1` n'ouvre rien : à vous d'ouvrir l'adresse ; `CSFLOW_PORT` fixe le port.
 
 ### Compiler un exécutable unique
 
@@ -101,6 +105,9 @@ Il pèse environ 14 Mo sous Windows et 50 Mo sous Linux.
   utilisez le paramètre `shell` du nœud (`bash`, `sh`, `pwsh`).
 - Dans le YAML, les commandes contenant `\` s'écrivent entre **quotes simples**
   (en quotes doubles, `\` serait interprété comme un échappement).
+- **Les démos fournies sont portables** : chemins en `/` et nœud `python` pour tout ce qui dépend du système
+  (comptage de lignes, tests, calculs). Seules des commandes identiques partout (`git`) restent dans des étapes
+  `shell`. Ne chaînez pas avec `&` (sous `bash` il lance en arrière-plan) : utilisez `&&`.
 
 ### Écrire un workflow : quels mots-clés ai-je le droit d'utiliser ?
 
@@ -157,7 +164,7 @@ Workflow en français (14 étapes) : « Préparation du COPIL » pour un projet 
 | Note d'escalade au sponsor | CSAgent, **seulement si le statut est ROUGE** (`skip_if`) | branche conditionnelle |
 | Validation de la cheffe de projet | **Humain** (`human_approval`) | rien n'est diffusé sans accord ; refus = diffusion annulée |
 
-Lancer : `python app.py` (`python3` sous Linux), choisir « Préparation du COPIL », cliquer sur Run. Livrables dans `tmp/copil/` (`tmp\copil\` sous Windows).
+Lancer : `python app.py` (`python3` sous Linux), choisir « Préparation du COPIL », cliquer sur Run. Livrables dans `tmp/copil/`.
 La date de référence (`date_reference`) est fixée au 16/10/2026 pour que la démo soit reproductible ; la modifier dans le YAML pour rejouer à une autre date.
 
 ---
