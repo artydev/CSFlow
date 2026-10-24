@@ -59,8 +59,12 @@ python engine.py workflows/demo_report.yaml
 python engine.py workflows/demo_code_review.yaml
 ```
 
-Sous WSL ou sur un serveur sans écran, l'interface a besoin d'un navigateur : voir `CSFLOW_NO_BROWSER` et
-`CSFLOW_PORT` (le script affiche l'adresse `http://localhost:<port>/index.html` à ouvrir à la main).
+**Navigateur sous Linux / WSL.** CSFlow choisit dans cet ordre : un navigateur Chromium (`chromium`,
+`google-chrome`, `microsoft-edge`, `brave-browser`…) en fenêtre d'application ; sous **WSL**, le navigateur de
+Windows (`wslview` ou `explorer.exe`, `localhost` étant relayé vers WSL2) ; Firefox ; sinon le navigateur par
+défaut, **sauf Epiphany / GNOME Web**, qui affiche « Page Unresponsive ». Si rien ne convient, CSFlow affiche
+l'adresse `http://localhost:<port>/index.html` et la marche à suivre (`sudo apt install chromium`).
+`CSFLOW_NO_BROWSER=1` n'ouvre rien : à vous d'ouvrir l'adresse ; `CSFLOW_PORT` fixe le port.
 
 ### Compiler un exécutable unique
 
