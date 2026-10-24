@@ -4,28 +4,38 @@
 
 ---
 
-## Démarrage rapide (Windows)
+## Démarrage rapide
 
-**1. Installer les dépendances** (Python 3.10+)
+CSFlow tourne sous **Windows** et sous **Linux / WSL**. Les commandes sont données pour les deux ;
+sauf mention contraire, le reste de ce document vaut pour les deux systèmes.
 
-```bat
-pip install -r requirements.txt
-```
+**1. Installer les dépendances** (Python 3.10 ou plus récent ; inutile avec l'exe compilé)
 
-**2. Lancer CSAgent** dans un terminal dédié — *depuis ce dossier* `workflow\`
-(CSAgent n'écrit que dans son dossier courant ; `start_agent.bat` doit être placé à côté de `CSFlow.exe` — la compilation l'y copie dans `build\`)
+| Windows | Linux / WSL |
+|---|---|
+| `pip install -r requirements.txt` | `pip install -r requirements.txt` (ou `sudo apt install python3-yaml` pour le seul mode MCP) |
 
-```bat
-set ALBERT_API_KEY=ta-cle
-start_agent.bat
-```
+Sur les distributions Linux récentes, `pip` refuse d'installer hors d'un environnement virtuel :
+`python3 -m venv .venv && . .venv/bin/activate`, puis la commande ci-dessus.
+
+**2. Lancer CSAgent** *depuis le dossier de CSFlow* (CSAgent n'écrit que dans son dossier courant ;
+`start_agent` doit être placé à côté de l'exécutable — la compilation l'y copie dans `build/`)
+
+| Windows | Linux / WSL |
+|---|---|
+| `set ALBERT_API_KEY=ta-cle` | `export ALBERT_API_KEY=ta-cle` |
+| `start_agent.bat` | `./start_agent.sh` |
+
+Les deux scripts démarrent CSAgent en mode API (port 8080) **puis** CSFlow, et arrêtent CSAgent à la
+fermeture de CSFlow. Variables facultatives : `MODEL` (nom du modèle ; sinon routage automatique),
+`PORT`, `API_KEY`, `CSAGENT_BIN`.
 
 **3. Lancer un workflow**
 
-Interface graphique (EEL, ouvre Chrome ou Edge) :
+Interface graphique (EEL, ouvre un navigateur : Chrome ou Edge sous Windows, tout navigateur sous Linux) :
 
-```bat
-python app.py
+```
+python app.py          (Windows)          python3 app.py          (Linux / WSL)
 ```
 
 L'interface comprend : une barre latérale (workflows et étapes avec leur état), le **graphe** du workflow
@@ -40,22 +50,41 @@ navigation complète au clavier (la liste des étapes remplace le graphe), annea
 bouton « Approuver » qui prend le focus à la demande de validation, animations coupées si le système
 demande « réduire les animations ».
 
-ou en ligne de commande :
+ou en ligne de commande, sans interface (Windows : `python engine.py workflows\demo_report.yaml` ;
+Linux : `python3 engine.py workflows/demo_report.yaml`) :
 
-```bat
-python engine.py workflows\demo_autofix.yaml
-python engine.py workflows\demo_report.yaml
-python engine.py workflows\demo_code_review.yaml
+```
+python engine.py workflows/demo_autofix.yaml
+python engine.py workflows/demo_report.yaml
+python engine.py workflows/demo_code_review.yaml
 ```
 
-### Conventions Windows des workflows
+Sous WSL ou sur un serveur sans écran, l'interface a besoin d'un navigateur : voir `CSFLOW_NO_BROWSER` et
+`CSFLOW_PORT` (le script affiche l'adresse `http://localhost:<port>/index.html` à ouvrir à la main).
 
-- Les chemins sont **relatifs** à `workflow\` (`tmp\sales.csv`), jamais absolus (`C:\temp\...`) :
-  l'agent ne peut pas écrire en dehors de son dossier courant.
-- Dans le YAML, les commandes shell contenant `\` s'écrivent entre **quotes simples** :
-  `cmd: 'python tmp\broken.py'` (en quotes doubles, `\` serait interprété comme un échappement).
-- Les commandes shell sont exécutées par `cmd.exe` (`type`, `dir`, `find`, ...).
-  Pour compter les lignes d'un fichier : `type fichier | find /c /v ""`.
+### Compiler un exécutable unique
+
+| Windows | Linux / WSL |
+|---|---|
+| `build_nuitka.bat` → `build\CSFlow.exe` | `./build_nuitka.sh` → `build/CSFlow` |
+| Prérequis : `pip install nuitka -r requirements.txt` et un compilateur C | Prérequis : `sudo apt install gcc patchelf`, puis `pip install nuitka -r requirements.txt` |
+
+L'exécutable embarque l'interpréteur Python : aucun Python n'est à installer sur le poste qui l'utilise.
+Il pèse environ 14 Mo sous Windows et 50 Mo sous Linux.
+
+### Conventions des workflows selon le système
+
+- Les chemins sont **relatifs** au dossier de CSFlow (`tmp/sales.csv`), jamais absolus : l'agent ne peut
+  pas écrire en dehors de son dossier courant.
+- Windows : les commandes `shell` sont exécutées par `cmd.exe` (`type`, `dir`, `find`…). Pour compter les
+  lignes d'un fichier : `type fichier | find /c /v ""`. Dans le YAML, une commande contenant `\` s'écrit
+  entre **quotes simples** : `cmd: 'python tmp\broken.py'` (en quotes doubles, `\` serait un échappement).
+- Linux : les commandes `shell` sont exécutées par `bash` (`cat`, `ls`, `wc -l`…), avec des chemins en `/`.
+  Pour compter les lignes : `wc -l < fichier`.
+- **Attention aux démos fournies.** `copil_projet`, `demo_report` et une partie des autres ont été écrites
+  pour Windows : chemins en `tmp\…` et commandes `cmd.exe` (par exemple `type … | find /c /v ""`). Sous Linux,
+  adaptez ces chemins et ces commandes, ou utilisez le nœud `python`, qui se comporte pareil partout.
+  Pour vos propres workflows, préférez le nœud `python` aux commandes propres à un système.
 
 ### Écrire un workflow : quels mots-clés ai-je le droit d'utiliser ?
 
@@ -85,8 +114,8 @@ Sans `--yes`, CSAgent demande une confirmation avant chaque outil destructeur
 (`write_file`, `edit_file`, ...) et **attend** `POST /api/confirm`. Le nœud `agent` répond :
 
 - par défaut, la demande apparaît dans l'interface (barre **Approuver / Rejeter**) ou au terminal (`y/n`) ;
-- avec `auto_confirm: true` sur l'étape (ou `set CSFLOW_AUTO_CONFIRM=1`), elle est approuvée automatiquement ;
-- ou lance CSAgent avec `--yes` (c'est ce que fait `start_agent.bat`) : aucune confirmation n'est alors émise.
+- avec `auto_confirm: true` sur l'étape (ou la variable d'environnement `CSFLOW_AUTO_CONFIRM=1`), elle est approuvée automatiquement ;
+- ou lance CSAgent avec `--yes` (c'est ce que font `start_agent.bat` et `start_agent.sh`) : aucune confirmation n'est alors émise.
 
 ```yaml
 - id: fix_with_agent
@@ -341,9 +370,9 @@ Les panneaux de l'interface se règlent à la souris comme au clavier (les régl
 
 Dans l'application, F12, Ctrl+Maj+I / J / C, Ctrl+U et le clic droit (« Inspecter ») sont désactivés. Ce confort d'usage n'est pas une protection : la page reste accessible dans un onglet normal du navigateur. Pour les réactiver (débogage de l'interface) :
 
-```bat
-set CSFLOW_DEBUG=1
-python app.py
+```
+set CSFLOW_DEBUG=1            (Windows)        export CSFLOW_DEBUG=1      (Linux / WSL)
+python app.py                                  python3 app.py
 ```
 
 ## Scripts Python sans Python installé : le nœud `python`
@@ -360,9 +389,9 @@ Python sur le poste : le nœud `python` les exécute avec l'interpréteur **emba
 ```
 
 Sorties identiques à `shell` : `output`, `stdout`, `stderr`, `returncode`. Dans l'exe compilé, CSFlow
-se relance lui-même (`CSFlow.exe --csflow-python …`), ce qui donne isolation et `timeout`.
+se relance lui-même (`CSFlow.exe --csflow-python …`, `./CSFlow --csflow-python …` sous Linux), ce qui donne isolation et `timeout`.
 
-Limites : seuls les modules de la bibliothèque standard listés dans `build_nuitka.bat`
+Limites : seuls les modules de la bibliothèque standard listés dans `build_nuitka.bat` / `build_nuitka.sh`
 (`--include-module`) sont disponibles — ajoutez-y les vôtres — et pas de `pip install` à l'exécution.
 Les démos `copil_projet`, `demo_autofix` et `dev_fix_tests` utilisent ce nœud ; `shell` reste là
 pour les autres commandes (git, etc.).
@@ -441,6 +470,6 @@ et un dossier de confiance.
 
 ### Vérifier
 
-- Sans CSAgent : `python tests\mcp_smoke.py` (19 contrôles, doit finir par `TOUT EST OK`).
+- Sans CSAgent : `python tests\mcp_smoke.py` (Windows) ou `python3 tests/mcp_smoke.py` (Linux) (19 contrôles, doit finir par `TOUT EST OK`).
 - Exe compilé : un exe sans console n'écrit rien dans `cmd` ; testez-le avec des tubes (voir `tests/mcp_smoke.py`
   pour le protocole), ou directement depuis CSAgent.
