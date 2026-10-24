@@ -63,3 +63,4 @@ agent_memory/conversation.json
 agent_memory/exact.json
 agent_memory/semantic.json
 agent_memory/summary.json
+csflow_worker/
