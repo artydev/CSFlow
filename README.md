@@ -385,6 +385,8 @@ Vous ──► CSAgent interactif (sans --yes) ──MCP──► CSFlow --mcp �
 
 ### Mise en route (exe compilé, Windows)
 
+Au premier lancement, l'exe crée à côté de lui `workflows\`, `tmp\`, `csflow.schema.json`, `CSFLOW_LLM_GUIDE.md` et `REFERENCE.md` (sans jamais écraser un fichier existant). Donnez le guide LLM à votre assistant pour qu'il écrive des workflows corrects.
+
 1. Compilez avec `build_nuitka.bat` : `build\` contient `CSFlow.exe`, `start_agent.bat`, `start_csagent.bat`,
    `mcp.windows.exe.example` et le dossier `skills\`.
 2. Dans `build\` :

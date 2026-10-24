@@ -55,7 +55,7 @@ def _seed(name: str) -> None:
         shutil.copy2(src, dst)
 
 
-for _name in ("workflows", "csflow.schema.json"):
+for _name in ("workflows", "csflow.schema.json", "CSFLOW_LLM_GUIDE.md", "REFERENCE.md"):
     _seed(_name)
 (APP_DIR / "tmp").mkdir(exist_ok=True)
 
