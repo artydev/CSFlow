@@ -4,7 +4,7 @@
 
 ---
 
-## Démarrage rapide
+## Démarrage rapide 
 
 CSFlow tourne sous **Windows** et sous **Linux / WSL**. Les commandes sont données pour les deux ;
 sauf mention contraire, le reste de ce document vaut pour les deux systèmes.
