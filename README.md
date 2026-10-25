@@ -502,3 +502,7 @@ et un dossier de confiance.
 - Sans CSAgent : `python tests\mcp_smoke.py` (Windows) ou `python3 tests/mcp_smoke.py` (Linux) (19 contrôles, doit finir par `TOUT EST OK`).
 - Exe compilé : un exe sans console n'écrit rien dans `cmd` ; testez-le avec des tubes (voir `tests/mcp_smoke.py`
   pour le protocole), ou directement depuis CSAgent.
+
+## Licence
+
+MIT, voir [LICENSE](LICENSE).
