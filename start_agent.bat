@@ -33,10 +33,14 @@ exit /b 1
 
 rem NB : "python.exe" avec extension : "start python" peut ouvrir un DOSSIER nomme python du PATH.
 rem Application CSFlow : exe a cote de ce fichier, sinon build\CSFlow.exe, sinon app.py
+rem WORKDIR = dossier de travail de CSFlow (exe -> son dossier ; app.py -> son dossier).
+rem Le worker CSAgent DOIT tourner dans ce meme dossier, sinon tmp\... n'est pas partage.
 set "CSFLOW_CMD="
+set "WORKDIR=%~dp0"
 if exist "%~dp0CSFlow.exe" set CSFLOW_CMD="%~dp0CSFlow.exe"
 if defined CSFLOW_CMD goto flow_ok
 if exist "%~dp0build\CSFlow.exe" set CSFLOW_CMD="%~dp0build\CSFlow.exe"
+if exist "%~dp0build\CSFlow.exe" set "WORKDIR=%~dp0build\"
 if defined CSFLOW_CMD goto flow_ok
 if exist "%~dp0app.py" set CSFLOW_CMD=python.exe "%~dp0app.py"
 if defined CSFLOW_CMD goto flow_ok
@@ -45,12 +49,16 @@ echo  ERREUR : CSFlow.exe ou app.py introuvable a cote de ce fichier.
 pause
 exit /b 1
 :flow_ok
+cd /d "%WORKDIR%"
 
 echo.
 echo   CSAgent -- mode API headless
 echo   Dossier : %CD%
 echo   Ecoute sur http://localhost:%PORT%
 echo.
+
+rem 0. tuer un ancien worker reste sur le port (mauvais dossier)
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr /r /c:":%PORT% .*LISTENING"') do taskkill /pid %%p /t /f >nul 2>&1
 
 rem 1. CSAgent dans sa propre fenetre (reduite), meme dossier de travail
 set "MODEL_ARG="
