@@ -60,6 +60,7 @@ def run_python_cli(argv: list) -> int:
     script, rest = argv[0], argv[1:]
     sys.argv = [script] + rest
     sys.path.insert(0, os.path.dirname(os.path.abspath(script)))
+    sys.path.append(os.getcwd())                 # comme avec -c : les modules du dossier de travail restent importables
     try:
         runpy.run_path(script, run_name="__main__")
     except SystemExit as e:
@@ -100,12 +101,22 @@ def python(params: dict) -> dict:
     if not script and not code:
         return {"output": "python: 'script' ou 'code' requis", "returncode": -1, "status": "error"}
     target = ["-c", str(code)] if code and not script else [script]
+    tmp_script = ""
 
     if _frozen():
         exe = _exe()
         if not exe:
             return {"output": "python: exécutable CSFlow introuvable (sys.executable=%r, argv0=%r)"
                               % (sys.executable, sys.argv[:1]), "returncode": -1, "status": "error"}
+        if target[0] == "-c":
+            # Nuitka refuse qu'un programme compilé se rappelle lui-même avec l'argument « -c »
+            # (garde « self-execution ») ; en plus, la ligne de commande Windows est limitée en taille
+            # et capricieuse avec les accents. On écrit donc le code dans un fichier temporaire (UTF-8).
+            import tempfile
+            fd, tmp_script = tempfile.mkstemp(prefix="csflow_", suffix=".py")
+            with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as fh:
+                fh.write(target[1])
+            target = [tmp_script]
         cmd = [exe, FLAG] + target + args
     elif target[0] == "-c":
         cmd = [sys.executable, "-c", target[1], *args]
@@ -123,3 +134,9 @@ def python(params: dict) -> dict:
         return {"output": f"Script timed out after {timeout}s", "returncode": -1, "status": "error"}
     except Exception as exc:
         return {"output": "%s (commande : %s)" % (exc, cmd[0]), "returncode": -1, "status": "error"}
+    finally:
+        if tmp_script:
+            try:
+                os.remove(tmp_script)
+            except OSError:
+                pass
