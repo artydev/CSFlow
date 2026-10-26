@@ -506,3 +506,6 @@ et un dossier de confiance.
 ## Licence
 
 MIT, voir [LICENSE](LICENSE).
+
+<img width="1903" height="1015" alt="image" src="https://github.com/user-attachments/assets/34989752-8fc1-4ec9-b679-e2a21ace5f09" />
+
