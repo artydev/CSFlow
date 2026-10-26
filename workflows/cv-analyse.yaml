@@ -347,7 +347,32 @@ steps:
                   + "\n\nLégende : ✓ établi, ~ partiel, ✗ non établi. Aide à la décision : aucune candidature n'est écartée automatiquement.\n")
       print(tableau)
 
-  # ── 6. rapport HTML pour la relecture humaine ───────────────────────────────
+  # ── 6. validation humaine (indispensable) ───────────────────────────────────
+  - id: validation
+    type: human_approval
+    description: "Validation par un agent habilité"
+    message: |
+      Synthèse prête (données fictives). Relisez le classement et les alertes ci-dessous, puis validez :
+      la liste sera enregistrée et le rapport HTML sera généré et ouvert dans le navigateur.
+      Rien n'est écarté automatiquement.
+
+      {{scoring.output}}
+    on_approve: enregistrer
+    on_reject: refus
+
+  # ── 7. approuvé : enregistrement ───────────────────────────────────────────
+  - id: enregistrer
+    type: python
+    description: "Enregistrement de la liste à examiner"
+    code: |
+      with open("tmp/candidatures/synthese.md", encoding="utf-8") as f:
+          synthese = f.read()
+      entete = "<!-- Liste à examiner validée par un agent habilité le {{now}}. Données fictives. -->\n\n"
+      with open("tmp/candidatures/liste_validee.md", "w", encoding="utf-8") as f:
+          f.write(entete + synthese)
+      print("tmp/candidatures/liste_validee.md")
+
+  # ── 8. rapport HTML (après validation) ───────────────────────────────
   - id: rapport_html
     type: python
     description: "Rapport HTML de synthèse"
@@ -488,7 +513,7 @@ steps:
           f.write(PAGE)
       print("tmp/candidatures/rapport_candidatures.html")
 
-  # ── 7. ouverture dans Microsoft Edge pour la relecture (navigateur par défaut si Edge est absent) ──
+  # ── 9. ouverture dans Microsoft Edge (navigateur par défaut si Edge est absent) ──
   - id: ouvrir_edge
     type: python
     description: "Ouverture du rapport dans Edge"
@@ -532,32 +557,6 @@ steps:
           print(("Edge introuvable : rapport ouvert avec le navigateur par défaut : " if ok
                  else "Edge introuvable et aucun navigateur lancé. Ouvrez le fichier : ") + chemin)
 
-  # ── 8. validation humaine (indispensable) ───────────────────────────────────
-  - id: validation
-    type: human_approval
-    description: "Validation par un agent habilité"
-    message: |
-      Synthèse prête (données fictives). Relisez le rapport ouvert dans le navigateur
-      (tmp/candidatures/rapport_candidatures.html), y compris les alertes, puis validez pour
-      enregistrer la liste à examiner. Rien n'est écarté automatiquement.
-
-      {{scoring.output}}
-    on_approve: enregistrer
-    on_reject: refus
-
-  # ── 9a. approuvé : enregistrement ───────────────────────────────────────────
-  - id: enregistrer
-    type: python
-    description: "Enregistrement de la liste à examiner"
-    code: |
-      with open("tmp/candidatures/synthese.md", encoding="utf-8") as f:
-          synthese = f.read()
-      entete = "<!-- Liste à examiner validée par un agent habilité le {{now}}. Données fictives. -->\n\n"
-      with open("tmp/candidatures/liste_validee.md", "w", encoding="utf-8") as f:
-          f.write(entete + synthese)
-      print("tmp/candidatures/liste_validee.md")
-    next: fin
-
   - id: fin
     type: log
     description: "Terminé"
@@ -568,7 +567,7 @@ steps:
     type: end
     message: "Liste à examiner validée."
 
-  # ── 9b. refusé : rien n'est enregistré ──────────────────────────────────────
+  # ── refusé : rien n'est enregistré ──────────────────────────────────────
   - id: refus
     type: log
     description: "Refus : rien n'est enregistré"
