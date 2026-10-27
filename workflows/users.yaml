@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=../csflow.schema.json
 name: users
-description: Récupère les utilisateurs de dummyjson, écrit un fichier XLSX puis ouvre Excel pour afficher le résultat (Windows).
+description: Récupère les utilisateurs de dummyjson, écrit un fichier XLSX puis l'ouvre dans l'application par défaut (Excel sous Windows, LibreOffice sous Linux).
 
 steps:
 
@@ -18,14 +18,14 @@ steps:
   - id: save_json
     type: file_write
     description: Sauvegarde de la réponse JSON
-    path: 'tmp\users.json'
+    path: 'tmp/users.json'
     content: '{{fetch_users.body}}'
 
   # ── 3. écrire le script de conversion JSON → XLSX ──────────────────────────
   - id: write_script
     type: file_write
     description: Écriture du script de conversion
-    path: 'tmp\users_to_xlsx.py'
+    path: 'tmp/users_to_xlsx.py'
     content: |
       import json, zipfile
 
@@ -114,16 +114,21 @@ steps:
   - id: to_xlsx
     type: python
     description: Conversion JSON → XLSX
-    script: 'tmp\users_to_xlsx.py'
+    script: 'tmp/users_to_xlsx.py'
 
-  # ── 5. ouvrir le XLSX dans Excel ───────────────────────────────────────────
-  - id: open_excel
-    type: shell
-    description: Ouverture du XLSX dans Excel
-    cmd: 'start "" tmp\users.xlsx'
+  # ── 5. ouvrir le XLSX dans l'application par défaut (Windows et Linux) ──────
+  - id: open_xlsx
+    type: python
+    description: Ouverture du XLSX dans l'application par défaut
+    continue_on_error: true
+    code: |
+      import pathlib, webbrowser
+      uri = pathlib.Path("tmp/users.xlsx").resolve().as_uri()
+      if not webbrowser.open(uri):
+          print("Aucune application ouverte : " + uri)
 
   # ── 6. fin ─────────────────────────────────────────────────────────────────
   - id: done
     type: log
     level: success
-    message: "Terminé : {{to_xlsx.output}} — Excel a été ouvert."
+    message: "Terminé : {{to_xlsx.output}} — tmp/users.xlsx ouvert dans l'application par défaut."

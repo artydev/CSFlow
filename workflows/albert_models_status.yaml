@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=../csflow.schema.json
 name: albert-models-status
-description: Récupère les modèles de l'API Albert (DINUM) et leur statut via CSAgent, génère une page HTML "award-winning" en thème clair et l'ouvre dans Edge via le protocole file:// (Windows).
+description: Récupère les modèles de l'API Albert (DINUM) et leur statut via CSAgent, génère une page HTML "award-winning" en thème clair et l'ouvre dans le navigateur par défaut (Windows et Linux).
 
 steps:
 
@@ -33,13 +33,13 @@ steps:
   - id: check_json
     type: file_read
     description: Vérification du JSON des modèles et de leur statut
-    path: 'tmp\albert_models_status.json'
+    path: 'tmp/albert_models_status.json'
 
   # ── 3. script Python : génère la page HTML "award-winning" en thème clair ───
   - id: write_script
     type: file_write
     description: Écriture du script Python qui crée la page HTML claire et imprime son chemin file://
-    path: 'tmp\albert_models_status_to_html.py'
+    path: 'tmp/albert_models_status_to_html.py'
     content: |
       import json, pathlib
 
@@ -131,23 +131,27 @@ steps:
 
       out_path = pathlib.Path('tmp/albert_models_status.html')
       out_path.write_text('\n'.join(html), encoding='utf-8')
-      # Imprime le chemin absolu file:// pour l'ouverture dans Edge
+      # Imprime le chemin absolu file:// pour l'ouverture dans le navigateur
       print(out_path.resolve().as_uri())
 
   # ── 4. exécuter le script (génère le HTML et imprime le chemin file://) ─────
   - id: generate_html
     type: python
     description: Génération de la page HTML claire et impression du chemin file://
-    script: 'tmp\albert_models_status_to_html.py'
+    script: 'tmp/albert_models_status_to_html.py'
 
-  # ── 5. ouvrir la page dans Edge via le protocole file:// ────────────────────
-  - id: open_edge
-    type: shell
-    description: Ouverture de la page dans Edge
-    cmd: 'start "" msedge "{{generate_html.output}}"'
+  # ── 5. ouvrir la page dans le navigateur par défaut (Windows et Linux) ───────
+  - id: open_html
+    type: python
+    description: Ouverture de la page dans le navigateur par défaut
+    continue_on_error: true
+    code: |
+      import webbrowser
+      if not webbrowser.open("{{generate_html.output}}".strip()):
+          print("Aucun navigateur lancé : ouvrez tmp/albert_models_status.html")
 
   # ── 6. fin ──────────────────────────────────────────────────────────────────
   - id: done
     type: log
     level: success
-    message: "Terminé : la page des modèles Albert et de leur statut a été ouverte dans Edge."
+    message: "Terminé : la page des modèles Albert et de leur statut est dans tmp/albert_models_status.html, ouverte dans le navigateur par défaut."

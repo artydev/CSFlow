@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=../csflow.schema.json
 name: weather
-description: Récupère la météo de Paris, Cuvergnon, Bordeaux, Lyon, Lille et Marseille, génère une page HTML combinée au thème bleu "award‑winning" et l'ouvre dans Edge via le protocole file:// (Windows).
+description: Récupère la météo de Paris, Cuvergnon, Bordeaux, Lyon, Lille et Marseille, génère une page HTML combinée au thème bleu "award‑winning" et l'ouvre dans le navigateur par défaut (Windows et Linux).
 
 steps:
 
@@ -17,7 +17,7 @@ steps:
   - id: save_paris_json
     type: file_write
     description: Sauvegarde du JSON Paris
-    path: 'tmp\weather_paris.json'
+    path: 'tmp/weather_paris.json'
     content: '{{fetch_paris.body}}'
 
   # ── 2. météo de Cuvergnon ───────────────────────────────────────────────────
@@ -33,7 +33,7 @@ steps:
   - id: save_cuvergnon_json
     type: file_write
     description: Sauvegarde du JSON Cuvergnon
-    path: 'tmp\weather_cuvergnon.json'
+    path: 'tmp/weather_cuvergnon.json'
     content: '{{fetch_cuvergnon.body}}'
 
   # ── 3. météo de Bordeaux ────────────────────────────────────────────────────
@@ -49,7 +49,7 @@ steps:
   - id: save_bordeaux_json
     type: file_write
     description: Sauvegarde du JSON Bordeaux
-    path: 'tmp\weather_bordeaux.json'
+    path: 'tmp/weather_bordeaux.json'
     content: '{{fetch_bordeaux.body}}'
 
   # ── 4. météo de Lyon ────────────────────────────────────────────────────────
@@ -65,7 +65,7 @@ steps:
   - id: save_lyon_json
     type: file_write
     description: Sauvegarde du JSON Lyon
-    path: 'tmp\weather_lyon.json'
+    path: 'tmp/weather_lyon.json'
     content: '{{fetch_lyon.body}}'
 
   # ── 5. météo de Lille ───────────────────────────────────────────────────────
@@ -81,7 +81,7 @@ steps:
   - id: save_lille_json
     type: file_write
     description: Sauvegarde du JSON Lille
-    path: 'tmp\weather_lille.json'
+    path: 'tmp/weather_lille.json'
     content: '{{fetch_lille.body}}'
 
   # ── 6. météo de Marseille ───────────────────────────────────────────────────
@@ -97,14 +97,14 @@ steps:
   - id: save_marseille_json
     type: file_write
     description: Sauvegarde du JSON Marseille
-    path: 'tmp\weather_marseille.json'
+    path: 'tmp/weather_marseille.json'
     content: '{{fetch_marseille.body}}'
 
   # ── 7. script de génération HTML combinée ───────────────────────────────────
   - id: write_script
     type: file_write
     description: Écriture du script Python qui crée la page HTML combinée et imprime son chemin file://
-    path: 'tmp\paris_cuvergnon_to_html.py'
+    path: 'tmp/paris_cuvergnon_to_html.py'
     content: |
       import json, pathlib
 
@@ -203,23 +203,27 @@ steps:
 
       out_path = pathlib.Path('tmp/weather_paris_cuvergnon.html')
       out_path.write_text('\n'.join(html), encoding='utf-8')
-      # Imprime le chemin absolu file:// pour l'ouverture dans Edge
+      # Imprime le chemin absolu file:// pour l'ouverture dans le navigateur
       print(out_path.resolve().as_uri())
 
   # ── 8. exécuter le script (génère le HTML et imprime le chemin file://) ─────
   - id: generate_html
     type: python
     description: Génération de la page HTML combinée et impression du chemin file://
-    script: 'tmp\paris_cuvergnon_to_html.py'
+    script: 'tmp/paris_cuvergnon_to_html.py'
 
-  # ── 9. ouvrir la page dans Edge via le protocole file:// ──────────────────────
-  - id: open_edge
-    type: shell
-    description: Ouverture de la page combinée dans Edge
-    cmd: 'start "" msedge "{{generate_html.output}}"'
+  # ── 9. ouvrir la page dans le navigateur par défaut (Windows et Linux) ──────
+  - id: open_html
+    type: python
+    description: Ouverture de la page combinée dans le navigateur par défaut
+    continue_on_error: true
+    code: |
+      import webbrowser
+      if not webbrowser.open("{{generate_html.output}}".strip()):
+          print("Aucun navigateur lancé : ouvrez tmp/weather_paris_cuvergnon.html")
 
   # ── 10. fin ────────────────────────────────────────────────────────────────
   - id: done
     type: log
     level: success
-    message: "Terminé : la page météo France (6 villes) a été ouverte dans Edge."
+    message: "Terminé : la page météo France (6 villes) est dans tmp/weather_paris_cuvergnon.html, ouverte dans le navigateur par défaut."
