@@ -1,6 +1,6 @@
 # CSFlow — Python × CSAgent
 
-> Automatisation de workflows : Python enchaîne les étapes, CSAgent s'occupe du raisonnement.
+> Automatisation de workflows : Python enchaîne les étapes, CSAgent s'occupe du raisonnement. 
 
 ---
 
