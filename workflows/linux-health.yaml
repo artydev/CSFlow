@@ -3,7 +3,7 @@ name: bilan-sante-linux
 description: >-
   Bilan de santé d'une machine Linux : relevé en lecture seule (services, journal, disques, ports, mises à jour),
   CSAgent explique chaque problème et propose UNE commande de correction, un programme n'autorise que les commandes
-  d'une liste blanche, un humain valide, puis un rapport HTML s'ouvre dans Chromium. Par défaut : simulation, rien n'est exécuté.
+  d'une liste blanche, un humain valide, puis un rapport HTML s'ouvre dans le navigateur par défaut. Par défaut : simulation, rien n'est exécuté.
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  Entrées (modifiables avant le lancement) :
@@ -519,21 +519,20 @@ steps:
       with open("tmp/bilan/rapport_bilan.html", "w", encoding="utf-8") as f:
           f.write(PAGE)
       print("tmp/bilan/rapport_bilan.html")
-  # ── 8. ouverture dans Chromium (WSL : navigateur Windows si pas d'affichage) ─
+  # ── 8. ouverture dans le navigateur par défaut (WSL : navigateur Windows si pas d'affichage) ─
   - id: ouvrir_navigateur
     type: python
-    description: "Ouverture du rapport dans Chromium"
+    description: "Ouverture du rapport dans le navigateur par défaut"
     continue_on_error: true
     code: |
-      import os, platform, shutil, subprocess, sys, webbrowser
+      import os, platform, subprocess, webbrowser
       from pathlib import Path
 
       chemin = os.path.abspath("tmp/bilan/rapport_bilan.html")
       uri = Path(chemin).as_uri()
       wsl = "microsoft" in platform.uname().release.lower()
       graphique = bool(os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"))
-      root = hasattr(os, "geteuid") and os.geteuid() == 0
-      ok, quoi = False, ""
+      ok = False
 
 
       def lancer(cmd):
@@ -541,30 +540,18 @@ steps:
 
 
       try:
-          # 1. Chromium (ou Chrome) s'il est installé et qu'un affichage est disponible (WSLg inclus)
-          if graphique or sys.platform in ("win32", "darwin"):
-              for nom in ("chromium", "chromium-browser", "google-chrome", "google-chrome-stable"):
-                  exe = shutil.which(nom)
-                  if exe:
-                      lancer([exe] + (["--no-sandbox"] if root else []) + [uri])
-                      ok, quoi = True, nom
-                      break
-          # 2. WSL sans affichage graphique : navigateur Windows
-          if not ok and wsl:
+          if wsl and not graphique:
+              # WSL sans affichage : le navigateur par défaut est celui de Windows
               win = subprocess.run(["wslpath", "-w", chemin], capture_output=True, text=True).stdout.strip()
               lancer(["cmd.exe", "/c", "start", "", win])
-              ok, quoi = True, "navigateur Windows"
-          # 3. navigateur par défaut
-          if not ok and shutil.which("xdg-open") and graphique:
-              lancer(["xdg-open", uri])
-              ok, quoi = True, "xdg-open"
-          if not ok:
+              ok = True
+          else:
+              # Navigateur par défaut : xdg-open sous Linux, start sous Windows, open sous macOS
               ok = webbrowser.open(uri)
-              quoi = "navigateur par défaut"
       except Exception as exc:
           print("Ouverture impossible : " + str(exc))
 
-      print(("Rapport ouvert (" + quoi + ") : " if ok else "Aucun navigateur lancé. Ouvrez le fichier : ") + chemin)
+      print(("Rapport ouvert dans le navigateur par défaut : " if ok else "Aucun navigateur lancé. Ouvrez le fichier : ") + chemin)
   - id: fin
     type: log
     description: "Terminé"
