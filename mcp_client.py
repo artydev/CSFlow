@@ -304,9 +304,14 @@ class HttpSession(_Session):
         self.protocol = PROTOCOL
 
     def _post(self, msg: dict, timeout: float):
+        # Un User-Agent explicite : le « Python-urllib » par défaut est refusé (HTTP 403) par beaucoup de
+        # services protégés par un pare-feu web. Un en-tête du fichier de configuration garde la priorité.
         headers = {"Content-Type": "application/json",
                    "Accept": "application/json, text/event-stream",
-                   **self._headers}
+                   "User-Agent": f"{CLIENT_NAME}/{CLIENT_VERSION} (MCP client)"}
+        if any(k.lower() == "user-agent" for k in self._headers):
+            headers.pop("User-Agent")
+        headers.update(self._headers)
         if self._session_id:
             headers["Mcp-Session-Id"] = self._session_id
         if msg.get("method") != "initialize":
@@ -317,15 +322,31 @@ class HttpSession(_Session):
             return urllib.request.urlopen(req, timeout=timeout)
         except urllib.error.HTTPError as exc:
             if exc.code in (401, 403):
-                raise McpError(f"Serveur « {self.name} » : accès refusé (HTTP {exc.code}) : vérifiez la clé ou le jeton.")
+                raise McpError(f"Serveur « {self.name} » : accès refusé (HTTP {exc.code}) : vérifiez la clé ou le jeton."
+                               + self._reply_hint(exc))
             if exc.code == 404 and self._session_id:
                 raise McpError(f"Serveur « {self.name} » : session expirée (HTTP 404).")
             if exc.code == 404:
                 raise McpError(f"Serveur « {self.name} » : adresse introuvable (HTTP 404) : {self.url}")
-            raise McpError(f"Serveur « {self.name} » : HTTP {exc.code}.")
+            raise McpError(f"Serveur « {self.name} » : HTTP {exc.code}." + self._reply_hint(exc))
         except (urllib.error.URLError, OSError) as exc:
             reason = getattr(exc, "reason", exc)
             raise McpError(f"Serveur « {self.name} » injoignable ({self.url}) : {reason}")
+
+    def _reply_hint(self, exc) -> str:
+        """Début de la réponse d'erreur du serveur (utile pour distinguer une clé refusée d'un pare-feu),
+        sans jamais y laisser une valeur d'en-tête que nous avons envoyée."""
+        try:
+            body = exc.read(300).decode("utf-8", "replace")
+        except Exception:
+            return ""
+        for value in self._headers.values():
+            if value and len(value) > 3:
+                body = body.replace(value, "***")
+                if value.lower().startswith("bearer "):
+                    body = body.replace(value[7:], "***")
+        body = " ".join(body.split())
+        return f"\nRéponse du serveur : {body}" if body else ""
 
     @staticmethod
     def _sse_messages(resp, deadline: float):
