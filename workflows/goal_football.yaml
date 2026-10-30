@@ -1,0 +1,73 @@
+# yaml-language-server: $schema=../csflow.schema.json
+name: goal-api-football
+description: >-
+  Interroge le serveur MCP de GOAL API (football) directement depuis CSFlow, sans CSAgent : liste les outils
+  du serveur, lit le quota restant, puis tente un classement. Lecture seule, aucune validation humaine nécessaire.
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Avant de lancer :
+#   1. copier mcp.goal.example en mcp.json (ou ajouter le serveur « goal-api » à votre mcp.json) ;
+#   2. définir la variable d'environnement GOAL_API_KEY (la clé n'est jamais écrite dans le fichier) ;
+#   3. lancer. L'étape « outils » écrit la liste réelle des outils et de leurs arguments dans
+#      tmp/goal/outils.txt : si le classement échoue sur un nom d'argument, corrigez « arguments »
+#      de l'étape « classement » d'après ce fichier.
+#
+#  Entrées :
+#    competition : nom du championnat (GOAL API prend les compétitions « par nom »)
+#
+#  Garde-fous : les 14 outils de GOAL API sont en lecture seule ; chaque appel compte comme une requête de
+#  votre forfait ; le texte rendu est une DONNÉE, enregistrée dans tmp/goal/ pour être relue, jamais exécutée.
+# ─────────────────────────────────────────────────────────────────────────────
+
+inputs:
+  competition: "Ligue 1"
+
+steps:
+
+  - id: outils
+    type: mcp_tools
+    description: "Liste les outils du serveur et leurs arguments"
+    server: goal-api
+
+  - id: outils_fichier
+    type: file_write
+    description: "Garde la liste (noms des arguments) pour la consulter"
+    path: tmp/goal/outils.txt
+    content: "{{outils.output}}"
+
+  - id: quota
+    type: mcp_call
+    description: "Requêtes restantes sur votre forfait"
+    server: goal-api
+    tool: get_quota
+    save_as: tmp/goal/quota.txt
+
+  - id: quota_info
+    type: log
+    message: "{{outils.count}} outils disponibles. Quota : {{quota.output}}"
+
+  - id: classement
+    type: mcp_call
+    description: "Classement du championnat choisi"
+    server: goal-api
+    tool: get_standings
+    arguments:
+      competition: "{{competition}}"
+    save_as: tmp/goal/classement.txt
+    max_chars: 4000
+    continue_on_error: true
+
+  - id: classement_info
+    type: log
+    skip_if: "'{{classement.status}}' != 'ok'"
+    message: "Classement de {{competition}} enregistré dans {{classement.path}}"
+
+  - id: classement_echec
+    type: log
+    level: warn
+    skip_if: "'{{classement.status}}' == 'ok'"
+    message: "Le classement a échoué ({{classement.output}}). Les arguments exacts de get_standings sont dans tmp/goal/outils.txt."
+
+  - id: fin
+    type: end
+    message: "Terminé. Les fichiers sont dans tmp/goal/."

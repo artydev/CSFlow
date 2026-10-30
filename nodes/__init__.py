@@ -37,4 +37,5 @@ from . import (   # noqa: E402, F401
     transform_node,
     human_approval_node,
     user_input_node,
+    mcp_node,
 )

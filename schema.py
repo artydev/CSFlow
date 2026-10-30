@@ -62,6 +62,8 @@ _JSON_TYPES = {
     "auto_confirm":      ["boolean", "string"],
     "continue_on_error": ["boolean", "string"],
     "headers":           "object",
+    "arguments":         ["object", "string"],
+    "max_chars":         ["integer", "string"],
 }
 
 _VAR_RE = re.compile(r"\{\{(.+?)\}\}")      # même motif que le moteur

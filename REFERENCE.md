@@ -73,6 +73,24 @@ Affiche un message dans la console et dans le log de l'interface.
 - `message` *(obligatoire)* : texte affiché (accepte les {{variables}})
 - `level` : info | success | warn | error (défaut info)
 
+### mcp_call
+Appelle un outil d'un serveur MCP déclaré dans mcp.json (sans CSAgent) ; sortie : le texte rendu par l'outil.
+
+- `server` *(obligatoire)* : nom du serveur dans le fichier de configuration (clé mcpServers)
+- `tool` *(obligatoire)* : nom de l'outil à appeler
+- `arguments` : arguments de l'outil : un objet YAML (les {{...}} sont remplacés), ou un texte JSON
+- `config` : fichier de configuration MCP (défaut mcp.json)
+- `timeout` : secondes d'attente de la réponse (défaut 60)
+- `save_as` : fichier où écrire le résultat complet (chemin relatif)
+- `max_chars` : longueur maximale de la sortie (défaut 50000) ; save_as garde tout
+
+### mcp_tools
+Liste les outils d'un serveur MCP déclaré dans mcp.json (sans CSAgent) ; sortie : un outil par ligne.
+
+- `server` *(obligatoire)* : nom du serveur dans le fichier de configuration (clé mcpServers)
+- `config` : fichier de configuration MCP (défaut mcp.json)
+- `timeout` : secondes d'attente par requête (défaut 60)
+
 ### python
 Exécute un script Python (fichier ou code inline) avec l'interpréteur embarqué : aucun Python à installer.
 
@@ -114,6 +132,24 @@ Demande un texte à l'humain (saisie, interface graphique ou terminal) ; sortie 
 - `{{env.NOM}}` : variable d'environnement NOM
 - `{{id.output}}` : résultat de l'étape « id » ; autres champs : {{id.returncode}}, {{id.stdout}}, {{id.status}}... selon le type
 - `{{nom}}` : variable déclarée dans `inputs`
+
+## Client MCP : appeler un serveur sans CSAgent (`mcp_tools`, `mcp_call`)
+
+CSFlow parle lui-même MCP (bibliothèque standard, rien à installer). Les serveurs sont déclarés par leur **nom** dans `mcp.json` (le même format que `csagent --mcp-config`, clé `mcpServers`) :
+
+```json
+{"mcpServers": {
+  "fichiers": {"command": "npx", "args": ["-y", "@modelcontextprotocol/server-filesystem", "."]},
+  "api":      {"url": "https://exemple.org/mcp", "headers": {"Authorization": "Bearer ${MON_JETON}"}}
+}}
+```
+
+- Deux transports : **stdio** (`command`, `args`, `env`, `cwd`) et **HTTP** « Streamable HTTP » (`url`, `headers`). Le transport SSE historique n'est pas géré.
+- `${NOM}` est remplacé par la variable d'environnement (une variable absente est une erreur, jamais une valeur vide) : les secrets restent hors du fichier.
+- Un workflow ne peut désigner qu'un serveur **déclaré** : il ne lance pas de commande et ne vise pas d'adresse de son choix.
+- Un serveur reste ouvert pendant le workflow (une seule connexion pour toutes les étapes) et est fermé à sa fin.
+- Le résultat d'un outil est une **donnée** : avec `save_as`, il s'écrit dans un fichier qu'un agent relit, sans être collé dans son instruction.
+- Le fichier `mcp.json` sert aussi à CSAgent : il peut contenir les deux usages (par exemple le serveur `csflow` de CSAgent et vos serveurs d'outils).
 
 ## Mode MCP (`CSFlow --mcp`)
 

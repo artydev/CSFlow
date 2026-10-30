@@ -170,6 +170,16 @@ class WorkflowEngine:
 
     # ── main run loop ─────────────────────────────────────────────────────────
     def run(self):
+        try:
+            self._run()
+        finally:
+            try:                                  # ferme les serveurs MCP ouverts par ce workflow
+                import mcp_client
+                mcp_client.close_all()
+            except Exception:
+                pass
+
+    def _run(self):
         name  = self.wf.get("name", "workflow")
         desc  = self.wf.get("description", "")
         steps = self.wf.get("steps", [])

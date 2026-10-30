@@ -426,6 +426,22 @@ Sur un poste sans Python, un agent qui tente `python` ou `py` échoue. Dans les 
 `agent`, interdisez-lui d'exécuter du code (« n'exécute rien, utilise read_file/edit_file ») : c'est
 l'étape `python` du workflow qui relance le script et rapporte le résultat.
 
+## Client MCP : appeler un serveur MCP depuis un workflow (sans CSAgent)
+
+Les étapes `mcp_tools` (lister les outils) et `mcp_call` (appeler un outil) parlent MCP directement, en bibliothèque standard : rien à installer. Les serveurs se déclarent **par leur nom** dans `mcp.json`, au même format que `csagent --mcp-config` (voir `mcp.client.example`) : transport stdio (`command`, `args`) ou HTTP (`url`, `headers`), `${VARIABLE}` pour les secrets.
+
+```yaml
+- id: lire
+  type: mcp_call
+  server: fichiers
+  tool: read_text_file
+  arguments:
+    path: "tmp/rapport.txt"
+  save_as: tmp/mcp/rapport.txt
+```
+
+Un workflow ne peut désigner qu'un serveur déclaré (il ne lance pas de commande de son choix), la connexion est partagée par les étapes puis fermée à la fin, et le résultat d'un outil reste une donnée (à relire par un agent depuis un fichier). Détails dans `REFERENCE.md`. Exemple complet : `workflows/goal_football.yaml` (football, serveur MCP de GOAL API ; copier `mcp.goal.example` en `mcp.json` et définir `GOAL_API_KEY`).
+
 ## Mode MCP : CSAgent lance vos workflows (`CSFlow --mcp`)
 
 `CSFlow --mcp` démarre CSFlow **sans interface**, comme serveur MCP (stdio). CSAgent, en mode terminal

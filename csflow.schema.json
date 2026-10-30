@@ -424,6 +424,135 @@
             "additionalProperties": false
           },
           {
+            "title": "mcp_call",
+            "type": "object",
+            "properties": {
+              "id": {
+                "description": "identifiant unique de l'étape ; son résultat s'utilise avec {{id.output}}"
+              },
+              "type": {
+                "const": "mcp_call",
+                "description": "Appelle un outil d'un serveur MCP déclaré dans mcp.json (sans CSAgent) ; sortie : le texte rendu par l'outil."
+              },
+              "description": {
+                "description": "libellé affiché dans l'interface"
+              },
+              "skip_if": {
+                "description": "expression Python ; si elle est vraie, l'étape est ignorée. Ex : \"'{{statut.output}}' != 'ROUGE'\""
+              },
+              "continue_on_error": {
+                "description": "true = le workflow continue même si l'étape échoue",
+                "type": [
+                  "boolean",
+                  "string"
+                ]
+              },
+              "next": {
+                "description": "id de l'étape suivante (défaut : l'étape suivante dans la liste)"
+              },
+              "on_approve": {
+                "description": "human_approval : id de l'étape suivante si approuvé"
+              },
+              "on_reject": {
+                "description": "human_approval : id de l'étape suivante si rejeté"
+              },
+              "server": {
+                "description": "nom du serveur dans le fichier de configuration (clé mcpServers)"
+              },
+              "tool": {
+                "description": "nom de l'outil à appeler"
+              },
+              "arguments": {
+                "description": "arguments de l'outil : un objet YAML (les {{...}} sont remplacés), ou un texte JSON",
+                "type": [
+                  "object",
+                  "string"
+                ]
+              },
+              "config": {
+                "description": "fichier de configuration MCP (défaut mcp.json)"
+              },
+              "timeout": {
+                "description": "secondes d'attente de la réponse (défaut 60)",
+                "type": [
+                  "integer",
+                  "string"
+                ]
+              },
+              "save_as": {
+                "description": "fichier où écrire le résultat complet (chemin relatif)"
+              },
+              "max_chars": {
+                "description": "longueur maximale de la sortie (défaut 50000) ; save_as garde tout",
+                "type": [
+                  "integer",
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "server",
+              "tool"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "title": "mcp_tools",
+            "type": "object",
+            "properties": {
+              "id": {
+                "description": "identifiant unique de l'étape ; son résultat s'utilise avec {{id.output}}"
+              },
+              "type": {
+                "const": "mcp_tools",
+                "description": "Liste les outils d'un serveur MCP déclaré dans mcp.json (sans CSAgent) ; sortie : un outil par ligne."
+              },
+              "description": {
+                "description": "libellé affiché dans l'interface"
+              },
+              "skip_if": {
+                "description": "expression Python ; si elle est vraie, l'étape est ignorée. Ex : \"'{{statut.output}}' != 'ROUGE'\""
+              },
+              "continue_on_error": {
+                "description": "true = le workflow continue même si l'étape échoue",
+                "type": [
+                  "boolean",
+                  "string"
+                ]
+              },
+              "next": {
+                "description": "id de l'étape suivante (défaut : l'étape suivante dans la liste)"
+              },
+              "on_approve": {
+                "description": "human_approval : id de l'étape suivante si approuvé"
+              },
+              "on_reject": {
+                "description": "human_approval : id de l'étape suivante si rejeté"
+              },
+              "server": {
+                "description": "nom du serveur dans le fichier de configuration (clé mcpServers)"
+              },
+              "config": {
+                "description": "fichier de configuration MCP (défaut mcp.json)"
+              },
+              "timeout": {
+                "description": "secondes d'attente par requête (défaut 60)",
+                "type": [
+                  "integer",
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "server"
+            ],
+            "additionalProperties": false
+          },
+          {
             "title": "python",
             "type": "object",
             "properties": {
