@@ -82,6 +82,7 @@ except ImportError:
     raise
 
 from engine import WorkflowEngine
+import audio_client
 
 WORKFLOWS_DIR = APP_DIR / "workflows"
 
@@ -90,6 +91,11 @@ eel.init(str(RES_DIR / "ui"))
 # ── human approval gate ───────────────────────────────────────────────────────
 _approval_event:  threading.Event | None = None
 _approval_result: dict = {}
+
+# ── saisie de texte (étape user_input) ────────────────────────────────────────
+_input_event:   threading.Event | None = None
+_input_result:  dict = {}
+_input_request: dict = {}
 
 
 # ── fonctions exposées au JS ──────────────────────────────────────────────────
@@ -183,9 +189,10 @@ def load_workflow(path: str) -> dict:
 
 @eel.expose
 def run_workflow(path: str) -> dict:
-    global _approval_event, _approval_result
+    global _approval_event, _approval_result, _input_event, _input_result, _input_request
     _approval_event  = None
     _approval_result = {}
+    _input_event, _input_result, _input_request = None, {}, {}
 
     def on_event(event: dict):
         try:
@@ -202,13 +209,22 @@ def run_workflow(path: str) -> dict:
         ev.wait(timeout=600)
         return result.get("answer", "rejected")
 
+    def wait_input(request: dict) -> dict:
+        global _input_event, _input_result, _input_request
+        ev     = threading.Event()
+        result = {}
+        _input_event, _input_result, _input_request = ev, result, dict(request)
+        ev.wait(timeout=600)
+        return result or {"cancelled": True}
+
     _wf_done = threading.Event()
 
     def _run():
         try:
             engine = WorkflowEngine(path,
                                     event_callback=on_event,
-                                    approval_wait=wait_approval)
+                                    approval_wait=wait_approval,
+                                    input_wait=wait_input)
             engine.run()
         except Exception as exc:
             try:
@@ -245,6 +261,61 @@ def resolve_approval(answer: str) -> dict:
         _approval_result["answer"] = answer
         _approval_event.set()
         _approval_event = None
+    return {"ok": True}
+
+
+def _remove_audio(*paths) -> None:
+    """Supprime l'enregistrement et sa transcription, seulement dans recordings/ et transcripts/."""
+    for p in paths:
+        q = str(p or "").replace("\\", "/")
+        if q.startswith(("recordings/", "transcripts/")) and ".." not in q:
+            try:
+                os.remove(q)
+            except OSError:
+                pass
+
+
+@eel.expose
+def audio_upload(b64: str, mime: str) -> dict:
+    """Dictée : l'interface envoie l'enregistrement (base64) ; la transcription arrive par événements."""
+    import base64
+    req = dict(_input_request)
+    if not req.get("voice"):
+        return {"ok": False, "error": "La dictée n'est pas activée pour cette étape."}
+    try:
+        audio = base64.b64decode(b64 or "", validate=False)
+    except Exception:
+        return {"ok": False, "error": "Audio illisible."}
+    if not audio:
+        return {"ok": False, "error": "Enregistrement vide."}
+
+    def _work():
+        try:
+            text, audio_path, saved = audio_client.transcribe(
+                req["csagent_url"], req["csagent_key"], audio, mime, req.get("language", "fr"),
+                progress=lambda part, total: eel.receiveEvent({"type": "user_input_progress", "part": part, "total": total}))
+            if not req.get("keep_audio"):
+                _remove_audio(audio_path, saved)
+            eel.receiveEvent({"type": "user_input_transcribed", "text": text})
+        except audio_client.AudioError as exc:
+            eel.receiveEvent({"type": "user_input_error", "message": str(exc)})
+        except Exception as exc:                                   # noqa: BLE001
+            eel.receiveEvent({"type": "user_input_error", "message": "Transcription impossible : %s" % exc})
+
+    threading.Thread(target=_work, daemon=True).start()
+    return {"ok": True}
+
+
+@eel.expose
+def submit_input(text: str, cancelled: bool = False) -> dict:
+    """Réponse de l'interface à une étape user_input."""
+    global _input_event
+    if _input_event:
+        _input_result["text"] = str(text or "")
+        if cancelled:
+            _input_result["cancelled"] = True
+        _input_event.set()
+        _input_event = None
     return {"ok": True}
 
 

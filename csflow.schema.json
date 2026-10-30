@@ -579,6 +579,74 @@
               "expression"
             ],
             "additionalProperties": false
+          },
+          {
+            "title": "user_input",
+            "type": "object",
+            "properties": {
+              "id": {
+                "description": "identifiant unique de l'étape ; son résultat s'utilise avec {{id.output}}"
+              },
+              "type": {
+                "const": "user_input",
+                "description": "Demande un texte à l'humain (saisie, interface graphique ou terminal) ; sortie : le texte, aussi écrit dans un fichier."
+              },
+              "description": {
+                "description": "libellé affiché dans l'interface"
+              },
+              "skip_if": {
+                "description": "expression Python ; si elle est vraie, l'étape est ignorée. Ex : \"'{{statut.output}}' != 'ROUGE'\""
+              },
+              "continue_on_error": {
+                "description": "true = le workflow continue même si l'étape échoue",
+                "type": [
+                  "boolean",
+                  "string"
+                ]
+              },
+              "next": {
+                "description": "id de l'étape suivante (défaut : l'étape suivante dans la liste)"
+              },
+              "on_approve": {
+                "description": "human_approval : id de l'étape suivante si approuvé"
+              },
+              "on_reject": {
+                "description": "human_approval : id de l'étape suivante si rejeté"
+              },
+              "prompt": {
+                "description": "question posée à l'humain"
+              },
+              "default": {
+                "description": "texte pré-rempli, modifiable (défaut : vide)"
+              },
+              "required": {
+                "description": "true = refuse un texte vide (défaut true)"
+              },
+              "save_as": {
+                "description": "fichier (chemin relatif) où écrire le texte (défaut tmp/saisie/<id de l'étape>.txt)"
+              },
+              "voice": {
+                "description": "true = bouton micro : dictée transcrite par CSAgent (interface graphique ; défaut false)"
+              },
+              "language": {
+                "description": "langue parlée : fr, en… ou auto (défaut fr)"
+              },
+              "keep_audio": {
+                "description": "true = garde l'enregistrement et sa transcription dans recordings/ et transcripts/ (défaut false : supprimés)"
+              },
+              "csagent_url": {
+                "description": "URL de CSAgent pour la dictée (défaut http://localhost:8080)"
+              },
+              "csagent_key": {
+                "description": "clé d'API de CSAgent (défaut demo-secret)"
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "prompt"
+            ],
+            "additionalProperties": false
           }
         ]
       }

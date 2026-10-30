@@ -104,12 +104,15 @@ class WorkflowEngine:
 
     def __init__(self, workflow_path: str,
                  event_callback=None,
-                 approval_wait=None):
+                 approval_wait=None,
+                 input_wait=None):
         """
         event_callback : callable(event: dict) — UI event bus (optional)
         approval_wait  : callable() -> str — blocks until human approves/rejects;
                          returns "approved" or "rejected" (optional; falls back
                          to terminal prompt)
+        input_wait     : callable(request: dict) -> dict — blocks until the human submits
+                         the text of a user_input step ({"text": ...} or {"cancelled": True})
         """
         path = Path(workflow_path)
         if not path.exists():
@@ -122,6 +125,7 @@ class WorkflowEngine:
         self.ctx: dict = {}
         self._cb            = event_callback
         self._approval_wait = approval_wait
+        self._input_wait    = input_wait
 
         # Pre-seed ctx with workflow inputs
         for k, v in self.wf.get("inputs", {}).items():
@@ -261,6 +265,9 @@ class WorkflowEngine:
                     {**ev, "step_id": _sid})
             if self._approval_wait:
                 params["_wait_approval"] = self._approval_wait
+            if self._input_wait:
+                params["_wait_input"] = self._input_wait
+            params["_step_id"] = sid
 
             handler = REGISTRY.get(stype)
             if handler is None:

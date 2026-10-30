@@ -94,6 +94,19 @@ Exécute une commande shell (cmd.exe sous Windows, bash ailleurs).
 
 - `expression` *(obligatoire)* : expression Python évaluée ; les {{variables}} sont substituées avant
 
+### user_input
+Demande un texte à l'humain (saisie, interface graphique ou terminal) ; sortie : le texte, aussi écrit dans un fichier.
+
+- `prompt` *(obligatoire)* : question posée à l'humain
+- `default` : texte pré-rempli, modifiable (défaut : vide)
+- `required` : true = refuse un texte vide (défaut true)
+- `save_as` : fichier (chemin relatif) où écrire le texte (défaut tmp/saisie/<id de l'étape>.txt)
+- `voice` : true = bouton micro : dictée transcrite par CSAgent (interface graphique ; défaut false)
+- `language` : langue parlée : fr, en… ou auto (défaut fr)
+- `keep_audio` : true = garde l'enregistrement et sa transcription dans recordings/ et transcripts/ (défaut false : supprimés)
+- `csagent_url` : URL de CSAgent pour la dictée (défaut http://localhost:8080)
+- `csagent_key` : clé d'API de CSAgent (défaut demo-secret)
+
 ## Variables {{…}}
 
 - `{{today}}` : date du jour (AAAA-MM-JJ)
@@ -118,5 +131,5 @@ Serveur MCP (stdio, JSON-RPC 2.0) qui expose les workflows du dossier `workflows
 `result`, `error`, `warnings` ; en échec : `failed_step` (`id`, `returncode`, `output` complète).
 
 `workflow` = nom de fichier seul (`demo_report` ou `demo_report.yaml`) ; chemins, `..` et fichiers cachés refusés.
-Un seul run à la fois ; un workflow avec `human_approval` n'est jamais lancé par ce mode.
+Un seul run à la fois ; un workflow avec `human_approval` ou `user_input` n'est jamais lancé par ce mode.
 

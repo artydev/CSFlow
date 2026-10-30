@@ -24,6 +24,7 @@ python -m nuitka ^
     --include-package=nodes ^
     --include-module=mcp_server ^
     --include-module=ui_launcher ^
+    --include-module=audio_client ^
     --include-module=runpy ^
     --include-package=unittest ^
     --include-module=csv ^

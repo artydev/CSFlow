@@ -15,7 +15,7 @@ Pourquoi des appels courts ?
 Garde-fous (volontairement stricts) :
     • seuls les fichiers de workflows/ (aucun chemin, aucun « .. ») ;
     • un seul workflow à la fois ;
-    • un workflow qui contient une étape human_approval est REFUSÉ avant de démarrer
+    • un workflow qui contient une étape human_approval ou user_input est REFUSÉ avant de démarrer
       (la validation humaine se fait dans l'interface de CSFlow, jamais par l'agent) ;
     • le workflow est validé (schema.check) avant l'exécution.
 
@@ -204,7 +204,7 @@ def _inspect(path: Path) -> dict:
         steps = [s for s in (wf.get("steps") or []) if isinstance(s, dict)]
         info.update(name=wf.get("name", path.stem), description=_clip(str(wf.get("description", "")).strip(), 200),
                     steps=len(steps),
-                    needs_human=any(s.get("type") == "human_approval" for s in steps),
+                    needs_human=any(s.get("type") in ("human_approval", "user_input") for s in steps),
                     uses_agent=any(s.get("type") == "agent" for s in steps))
     except Exception as exc:                            # noqa: BLE001
         info["invalid_yaml"] = _clip(exc, 200)
@@ -248,7 +248,7 @@ def tool_run(args: dict):
     path = _resolve(args.get("workflow"))
     info, text = _inspect(path)
     if info["needs_human"]:
-        raise ToolError(f"'{path.name}' contains a human approval step: it is not run over MCP. "
+        raise ToolError(f"'{path.name}' contains a human step (approval or text input): it is not run over MCP. "
                         "Tell the user to run it from the CSFlow interface.")
     issues = _issues(text)
     if any(i["level"] == "error" for i in issues):

@@ -120,6 +120,25 @@ h1, h2, h3, p { margin: 0; }
   border-bottom: 3px solid #d97706;
 }
 .approval .msg { flex: 1; min-width: 240px; font-size: 1rem; font-weight: 600; }
+.userinput {
+  flex: none; display: flex; flex-direction: column; gap: 10px;
+  background: #e0f2fe; color: #0c4a6e; padding: 12px 20px; border-bottom: 3px solid #0284c7;
+}
+.userinput .msg { font-size: 1rem; font-weight: 600; }
+.userinput textarea {
+  width: 100%; resize: vertical; min-height: 5.5rem; padding: 10px 12px; font: inherit; line-height: 1.5;
+  color: #0f172a; background: #fff; border: 2px solid #0369a1; border-radius: 8px;
+}
+.userinput .voice { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.btn-mic { background: #0369a1; } .btn-mic:hover:not(:disabled) { background: #075985; }
+.btn-mic.rec { background: #991b1b; }
+.btn-mic:disabled { background: #475569; color: #e2e8f0; cursor: not-allowed; }
+.userinput .voice-status { color: #075985; font-size: .95rem; }
+.userinput .voice-err { color: #7f1d1d; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 6px; padding: 4px 10px; font-size: .95rem; }
+.userinput .actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.userinput .hint { color: #075985; font-size: .9rem; }
+.userinput .btn:disabled { background: #475569; color: #e2e8f0; cursor: not-allowed; }
+.userinput :focus-visible { outline-color: #0f172a; }
 .btn { min-height: 42px; padding: 0 20px; border-radius: 9px; border: 2px solid transparent; font-weight: 700; color: #fff; }
 .btn-approve { background: #166534; } .btn-approve:hover { background: #14532d; }
 .btn-reject  { background: #991b1b; } .btn-reject:hover  { background: #7f1d1d; }
@@ -394,12 +413,12 @@ const { m, mount, redraw } = umai;
 const ICONS = {
   agent: '🤖', shell: '⚡', python: '🐍', file_read: '📄', file_write: '✏️',
   log: '📝', transform: '⚙️', http_get: '🌐', http_post: '🌐',
-  human_approval: '👤', end: '🏁'
+  human_approval: '👤', user_input: '✎', end: '🏁'
 };
 const TYPE_LABEL = {
   agent: 'Agent CSAgent', shell: 'Commande shell', python: 'Script Python', file_read: 'Lecture de fichier',
   file_write: 'Écriture de fichier', log: 'Message', transform: 'Transformation',
-  http_get: 'Requête GET', http_post: 'Requête POST', human_approval: 'Validation humaine', end: 'Fin'
+  http_get: 'Requête GET', http_post: 'Requête POST', human_approval: 'Validation humaine', user_input: 'Saisie de texte', end: 'Fin'
 };
 // Chaque état a un libellé ET un glyphe : l'information ne repose jamais sur la couleur seule
 const STATUS = {
@@ -595,6 +614,13 @@ const store = {
   result: '',            // '' | 'done' | 'error'
   approvalVisible: false,
   approvalMsg: '',
+  inputVisible: false,
+  inputReq: null,
+  inputText: '',
+  voiceState: 'idle',
+  voiceMsg: '',
+  voiceErr: '',
+  voiceSecs: 0,
   graph: null,
 
   async init() {
@@ -643,6 +669,7 @@ const store = {
     store.follow = true;
     store.bottomTab = 'events';
     store.approvalVisible = false;
+    store.inputVisible = false;
     store.resetRun();
     store.logLines = [];
     store.log('wf', 'Démarrage…');
@@ -666,6 +693,21 @@ const store = {
       console.error('[CSFlow] resolveApproval error:', err);
     }
     store.log('wf', answer === 'approved' ? '✓ Approuvé' : '✗ Rejeté');
+  },
+
+  async submitInput(cancelled) {
+    const text = store.inputText;
+    if (!cancelled && store.voiceState !== 'idle') return;          // dictée en cours : on attend la transcription
+    if (!cancelled && store.inputReq && store.inputReq.required && !text.trim()) return;
+    Voice.abort();
+    store.inputVisible = false;
+    redraw();
+    try {
+      await eel.submit_input(cancelled ? '' : text, !!cancelled)();
+    } catch (err) {
+      console.error('[CSFlow] submitInput error:', err);
+    }
+    store.log('wf', cancelled ? '✗ Saisie annulée' : '✓ Texte saisi');
   },
 
   resetRun() {
@@ -768,6 +810,39 @@ const store = {
           const b = document.getElementById('btn-approve'); if (b) b.focus();
         }));
         break;
+      case 'user_input_required':
+        store.inputReq = { prompt: ev.prompt || 'Saisie demandée', required: ev.required !== false, voice: !!ev.voice };
+        store.inputText = ev.default || '';
+        store.voiceState = 'idle'; store.voiceMsg = ''; store.voiceErr = '';
+        store.inputVisible = true;
+        store.note(sid, `Saisie demandée : ${ev.prompt || ''}`);
+        store.log('wf', `Saisie requise : ${ev.prompt || ''}`);
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          const t = document.getElementById('input-text'); if (t) t.focus();
+        }));
+        break;
+      case 'user_input_progress':
+        store.voiceMsg = ev.total > 1 ? `Transcription… partie ${ev.part}/${ev.total}` : 'Transcription en cours…';
+        break;
+      case 'user_input_transcribed': {
+        const t = String(ev.text || '').trim();
+        store.voiceState = 'idle';
+        if (t) {
+          store.inputText = store.inputText.trim() ? store.inputText.replace(/\s+$/, '') + '\n' + t : t;
+          store.voiceMsg = 'Transcription terminée : relisez et corrigez le texte avant de valider.';
+        } else {
+          store.voiceMsg = '';
+          store.voiceErr = 'Aucune parole détectée.';
+        }
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          const t2 = document.getElementById('input-text'); if (t2) t2.focus();
+        }));
+        break;
+      }
+      case 'user_input_error':
+        store.voiceState = 'idle'; store.voiceMsg = '';
+        store.voiceErr = ev.message || 'Transcription impossible.';
+        break;
       case 'workflow_done':
         store.running = false; store.result = 'done'; store.current = null;
         store.log('wf', '✅ Workflow terminé');
@@ -797,6 +872,7 @@ const statusOf = id => store.statuses[id] || 'pending';
 
 const headerState = () =>
   store.approvalVisible ? ['waiting', 'Approbation requise'] :
+  store.inputVisible    ? ['waiting', 'Saisie requise'] :
   store.running         ? ['running', 'En cours'] :
   store.result === 'done'  ? ['done', 'Terminé'] :
   store.result === 'error' ? ['error', 'Échec'] :
@@ -831,6 +907,98 @@ const ApprovalBar = () =>
     m('div.msg', 'Votre validation est requise : ', store.approvalMsg),
     m('button.btn.btn-approve', { id: 'btn-approve', onclick: () => store.resolveApproval('approved') }, '✓ Approuver'),
     m('button.btn.btn-reject',  { id: 'btn-reject',  onclick: () => store.resolveApproval('rejected') }, '✕ Rejeter'));
+
+// ── Dictée : enregistrement dans le navigateur, transcription par CSAgent (côté Python) ──
+const VOICE_MAX_SECONDS = 20 * 60;
+const Voice = {
+  rec: null, stream: null, chunks: [], timer: null, t0: 0, discard: false,
+  supported() { return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder); },
+  releaseStream() {
+    clearInterval(Voice.timer);
+    if (Voice.stream) { Voice.stream.getTracks().forEach(t => t.stop()); Voice.stream = null; }
+  },
+  async start() {
+    store.voiceErr = ''; store.voiceMsg = '';
+    if (!Voice.supported()) {
+      store.voiceErr = 'Le micro n’est pas disponible dans ce navigateur (la page doit être ouverte en localhost).';
+      redraw(); return;
+    }
+    try {
+      Voice.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err) {
+      store.voiceErr = 'Micro refusé ou introuvable (' + ((err && err.name) || err) + '). Autorisez le micro puis réessayez.';
+      redraw(); return;
+    }
+    const mime = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4']
+      .find(t => window.MediaRecorder.isTypeSupported(t)) || '';
+    Voice.chunks = []; Voice.discard = false;
+    Voice.rec = new MediaRecorder(Voice.stream, mime ? { mimeType: mime } : undefined);
+    Voice.rec.ondataavailable = e => { if (e.data && e.data.size) Voice.chunks.push(e.data); };
+    Voice.rec.onstop = () => Voice.finish(Voice.rec.mimeType || mime || 'audio/webm');
+    Voice.rec.start(1000);
+    store.voiceState = 'recording'; store.voiceSecs = 0; Voice.t0 = Date.now();
+    Voice.timer = setInterval(() => {
+      store.voiceSecs = Math.floor((Date.now() - Voice.t0) / 1000);
+      if (store.voiceSecs >= VOICE_MAX_SECONDS) Voice.stop();
+      redraw();
+    }, 500);
+    redraw();
+  },
+  stop() {
+    if (Voice.rec && Voice.rec.state !== 'inactive') Voice.rec.stop();
+    Voice.releaseStream();
+  },
+  abort() {                                    // annulation / validation : on jette l'enregistrement en cours
+    Voice.discard = true;
+    if (Voice.rec && Voice.rec.state !== 'inactive') { try { Voice.rec.stop(); } catch (_) { /* déjà arrêté */ } }
+    Voice.releaseStream();
+    store.voiceState = 'idle';
+  },
+  async finish(mime) {
+    Voice.releaseStream();
+    if (Voice.discard) { store.voiceState = 'idle'; redraw(); return; }
+    const blob = new Blob(Voice.chunks, { type: mime });
+    store.voiceState = 'transcribing'; store.voiceMsg = 'Envoi de l’enregistrement…'; redraw();
+    const b64 = await new Promise(res => {
+      const fr = new FileReader();
+      fr.onloadend = () => res(String(fr.result).split(',')[1] || '');
+      fr.readAsDataURL(blob);
+    });
+    try {
+      const r = await eel.audio_upload(b64, mime)();
+      if (!r || !r.ok) { store.voiceState = 'idle'; store.voiceMsg = ''; store.voiceErr = (r && r.error) || 'Envoi impossible.'; }
+    } catch (err) {
+      store.voiceState = 'idle'; store.voiceMsg = ''; store.voiceErr = 'Envoi impossible : ' + err;
+    }
+    redraw();
+  }
+};
+const mmss = s => String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+
+const InputBar = () =>
+  m('section.userinput', { 'aria-labelledby': 'input-label' },
+    m('label.msg', { id: 'input-label', for: 'input-text' }, store.inputReq.prompt),
+    m('textarea', {
+      id: 'input-text', rows: 4, value: store.inputText,
+      'aria-required': store.inputReq.required ? 'true' : 'false',
+      oninput: e => { store.inputText = e.target.value; },
+      onkeydown: e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); store.submitInput(false); } }
+    }),
+    store.inputReq.voice ? m('div.voice',
+      m('button.btn.btn-mic', {
+        id: 'btn-mic', type: 'button', class: store.voiceState === 'recording' ? 'rec' : '',
+        'aria-pressed': store.voiceState === 'recording' ? 'true' : 'false',
+        disabled: store.voiceState === 'transcribing',
+        onclick: () => (store.voiceState === 'recording' ? Voice.stop() : Voice.start())
+      }, store.voiceState === 'recording' ? `⏹ Arrêter (${mmss(store.voiceSecs)})`
+        : store.voiceState === 'transcribing' ? '… Transcription' : '🎙 Dicter'),
+      m('span.voice-status', { id: 'voice-status', role: 'status', 'aria-live': 'polite' },
+        store.voiceState === 'recording' ? 'Enregistrement en cours… parlez, puis cliquez sur Arrêter.' : store.voiceMsg),
+      store.voiceErr ? m('span.voice-err', { id: 'voice-err', role: 'alert' }, store.voiceErr) : null) : null,
+    m('div.actions',
+      m('button.btn.btn-approve', { id: 'btn-input-ok', disabled: store.voiceState !== 'idle' || (store.inputReq.required && !store.inputText.trim()), onclick: () => store.submitInput(false) }, '✓ Valider'),
+      m('button.btn.btn-reject',  { id: 'btn-input-cancel', onclick: () => store.submitInput(true) }, '✕ Annuler'),
+      m('span.hint', 'Ctrl + Entrée pour valider')));
 
 const Mk = id => {
   const s = statusOf(id);
@@ -1192,6 +1360,7 @@ const App = () =>
     m('a.skip', { href: '#graph-body' }, 'Aller au graphe'),
     Header(),
     store.approvalVisible ? ApprovalBar() : null,
+    store.inputVisible ? InputBar() : null,
     m('main.grid', { class: (store.maxPane ? 'mx-' + store.maxPane : '') + (store.hideDetail ? ' no-detail' : ''), style: rowsStyle() },
       Sidebar(),
       Graph(),

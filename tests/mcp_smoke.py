@@ -9,6 +9,7 @@ WF = {
     "quick.yaml": "name: quick\nsteps:\n  - id: a\n    type: log\n    message: bonjour\n",
     "slow.yaml": "name: slow\nsteps:\n  - id: a\n    type: python\n    code: |\n      import time\n      time.sleep(3)\n",
     "human.yaml": "name: human\nsteps:\n  - id: h\n    type: human_approval\n    message: ok ?\n",
+    "saisie.yaml": "name: saisie\nsteps:\n  - id: s\n    type: user_input\n    prompt: texte ?\n",
     "fails.yaml": "name: fails\nsteps:\n  - id: f\n    type: python\n    code: |\n      import sys\n      sys.exit(3)\n",
     "broken.yaml": "name: broken\nsteps:\n  - id: x\n    type: nonexistent\n",
 }
@@ -42,11 +43,12 @@ r = rpc("initialize", {"protocolVersion": "2025-06-18", "capabilities": {}, "cli
 check(r["result"]["serverInfo"]["name"], "initialize")
 rpc("notifications/initialized", notif=True)
 check({t["name"] for t in rpc("tools/list")["result"]["tools"]} == {"csflow_list", "csflow_check", "csflow_run", "csflow_status"}, "4 outils exposes")
-err, d = call("csflow_list"); check(not err and len(d["workflows"]) == 5, "list")
+err, d = call("csflow_list"); check(not err and len(d["workflows"]) == 6, "list")
 err, d = call("csflow_check", workflow="broken"); check(not err and d["ok"] is False, "check detecte l'erreur")
 for bad in ("../app.py", "/etc/passwd", "a/b.yaml", ".hidden", "nope"):
     err, d = call("csflow_run", workflow=bad); check(err, f"refus : {bad}")
 err, d = call("csflow_run", workflow="human.yaml"); check(err, "human_approval refuse")
+err, d = call("csflow_run", workflow="saisie.yaml"); check(err, "user_input refuse")
 err, d = call("csflow_run", workflow="broken.yaml"); check(d.get("started") is False, "workflow invalide non lance")
 err, d = call("csflow_run", workflow="quick.yaml", wait_seconds=20); check(d["status"] == "done", "quick -> done")
 err, d = call("csflow_run", workflow="fails.yaml", wait_seconds=20); check(d["status"] == "error" and d.get("failed_step", {}).get("returncode") == 3, "fails -> error + failed_step")
