@@ -79,6 +79,7 @@ class FakeHttp(BaseHTTPRequestHandler):
     sse = False
     required_key = "k-secret"
     seen = []
+    agents = []
 
     def log_message(self, *a):
         pass
@@ -91,8 +92,15 @@ class FakeHttp(BaseHTTPRequestHandler):
         body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         FakeHttp.seen.append((body.get("method"), self.headers.get("Mcp-Session-Id"),
                               self.headers.get("MCP-Protocol-Version")))
+        FakeHttp.agents.append(self.headers.get("User-Agent"))
+        if (self.headers.get("User-Agent") or "").startswith("Python-urllib"):
+            blocked = b"error code: 1010"
+            self.send_response(403); self.send_header("Content-Length", str(len(blocked))); self.end_headers()
+            self.wfile.write(blocked); return
         if self.headers.get("Authorization") != "Bearer " + self.required_key:
-            self.send_response(401); self.end_headers(); return
+            body = ("refusé pour " + self.headers.get("Authorization", "")).encode()
+            self.send_response(401); self.send_header("Content-Length", str(len(body))); self.end_headers()
+            self.wfile.write(body); return
         out = handle(body)
         if out is None:
             self.send_response(202); self.end_headers(); return
@@ -277,6 +285,7 @@ class HttpTests(Base):
 
     def _run(self, handler):
         FakeHttp.seen = []
+        FakeHttp.agents = []
         srv = serve(handler)
         self.addCleanup(srv.server_close)
         self.addCleanup(srv.shutdown)
@@ -313,6 +322,26 @@ class HttpTests(Base):
         r = mcp_tools({"server": "web", "config": self.cfg})
         self.assertEqual(r["status"], "error")
         self.assertIn("401", r["output"])
+        self.assertNotIn("mauvaise-cle-zzz", r["output"])
+
+    def test_explicit_user_agent_is_sent_not_python_urllib(self):
+        self._run(FakeHttp)
+        self._check()
+        self.assertTrue(FakeHttp.agents and all(a.startswith("csflow/") for a in FakeHttp.agents), FakeHttp.agents)
+
+    def test_user_agent_from_config_wins(self):
+        self._run(FakeHttp)
+        cfg = json.loads(Path(self.cfg).read_text(encoding="utf-8"))
+        cfg["mcpServers"]["web"]["headers"]["user-agent"] = "mon-agent/9"
+        Path(self.cfg).write_text(json.dumps(cfg), encoding="utf-8")
+        mcp_tools({"server": "web", "config": self.cfg})
+        self.assertEqual(set(FakeHttp.agents), {"mon-agent/9"})
+
+    def test_error_reply_is_shown_but_never_the_key(self):
+        self._run(FakeHttp)
+        os.environ["CSFLOW_TEST_KEY"] = "mauvaise-cle-zzz"
+        r = mcp_tools({"server": "web", "config": self.cfg})
+        self.assertIn("Réponse du serveur", r["output"])
         self.assertNotIn("mauvaise-cle-zzz", r["output"])
 
     def test_unreachable_server(self):
