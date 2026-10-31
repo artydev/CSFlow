@@ -6,7 +6,7 @@ description: >-
   les contradictions, les trous du texte et les cas limites, avec la preuve de chaque décision.
   Un contrôle mécanique vérifie que chaque règle cite le texte mot pour mot. Aperçu HTML puis
   validation humaine. Par défaut : texte FICTIF intégré (source: exemple).
-  Prérequis : mcp.json avec le serveur « prolog-mcp » (voir mcp.prolog.example) ; CSAgent en mode API.
+  Prérequis : mcp.json avec « prolog » et « prolog2 » (voir mcp.prolog.example) ; CSAgent en mode API.
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  Principe : l'IA traduit, Prolog raisonne (exact, exhaustif, avec preuve), l'humain décide.
@@ -17,8 +17,8 @@ description: >-
 #    source: fiche    -> fiche service-public réelle : renseignez fiche_id (ex : F2882)
 #                        (outil lire_fiche du serveur « service-public » ; nom du paramètre à vérifier)
 #
-#  Session Prolog : prolog-mcp garde une session persistante. En cas de correction automatique, le moteur
-#  (déjà chargé) fournit un prédicat reset/0 qui efface les anciennes règles avant de recharger les nouvelles.
+#  Pourquoi « prolog » ET « prolog2 » : prolog-mcp garde une session persistante et n'a pas
+#  d'outil de remise à zéro. En cas de correction automatique, on recharge dans une 2e instance propre.
 #
 #  Le moteur remplace tout « {{...}} » dans le code Python : d'où l'absence de f-strings avec
 #  accolades doublées et les marqueurs @@...@@ du rapport.
@@ -187,7 +187,7 @@ steps:
   - id: charger
     type: mcp_call
     description: "Chargement du moteur et des règles dans Prolog"
-    server: prolog-mcp
+    server: prolog
     tool: loadProgram
     arguments:
       program: "{{lire_moteur.output}}\n{{lire_regles.output}}"
@@ -195,7 +195,7 @@ steps:
   - id: analyser
     type: mcp_call
     description: "Exploration exhaustive des profils (contradictions, trous, cas limites)"
-    server: prolog-mcp
+    server: prolog
     tool: runPrologQuery
     arguments:
       query: "rapport."
@@ -242,9 +242,6 @@ steps:
                            "invalide. Règles non chargées : %s. La première (%s) ou la clause qui la précède est la plus "
                            "probable fautive." % (", ".join(non_chargees), non_chargees[0]))
       ids_info = {i for i, _, _ in infos}
-      for ligne in rap.splitlines():
-          if ligne.startswith("Error:"):
-              problemes.append("Message de Prolog : " + ligne.strip() + " (numéro de ligne compté sur le moteur suivi de regles.pl).")
       for r in sorted(declarees - ids_info):
           problemes.append("La règle %s n'a pas de regle_info(...) avec citation entre guillemets." % r)
       for r in sorted(ids_info - declarees):
@@ -285,29 +282,20 @@ steps:
     skip_if: "'{{controle.output}}' == 'OK'"
     path: 'tmp/audit/regles.pl'
 
-  - id: reinit
-    type: mcp_call
-    description: "Remise à zéro des anciennes règles (le moteur reste chargé)"
-    skip_if: "'{{controle.output}}' == 'OK'"
-    server: prolog-mcp
-    tool: runPrologQuery
-    arguments:
-      query: "reset."
-
   - id: charger2
     type: mcp_call
-    description: "Rechargement des règles corrigées"
+    description: "Rechargement dans une instance Prolog propre"
     skip_if: "'{{controle.output}}' == 'OK'"
-    server: prolog-mcp
+    server: prolog2
     tool: loadProgram
     arguments:
-      program: "{{lire_regles2.output}}"
+      program: "{{lire_moteur.output}}\n{{lire_regles2.output}}"
 
   - id: analyser2
     type: mcp_call
     description: "Nouvelle exploration exhaustive"
     skip_if: "'{{controle.output}}' == 'OK'"
-    server: prolog-mcp
+    server: prolog2
     tool: runPrologQuery
     arguments:
       query: "rapport."
@@ -354,9 +342,6 @@ steps:
                            "invalide. Règles non chargées : %s. La première (%s) ou la clause qui la précède est la plus "
                            "probable fautive." % (", ".join(non_chargees), non_chargees[0]))
       ids_info = {i for i, _, _ in infos}
-      for ligne in rap.splitlines():
-          if ligne.startswith("Error:"):
-              problemes.append("Message de Prolog : " + ligne.strip() + " (numéro de ligne compté sur le moteur suivi de regles.pl).")
       for r in sorted(declarees - ids_info):
           problemes.append("La règle %s n'a pas de regle_info(...) avec citation entre guillemets." % r)
       for r in sorted(ids_info - declarees):

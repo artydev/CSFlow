@@ -1,22 +1,24 @@
-// Copiez ce fichier en mcp.json dans le dossier CSFlow (ou fusionnez le bloc dans votre mcpServers).
+// Copiez ce fichier en mcp.json dans le dossier CSFlow (ou fusionnez les blocs dans votre mcpServers).
 //
-// Installer prolog-mcp UNE FOIS (aucun téléchargement ensuite : Prolog tourne en local) :
-//   git clone https://github.com/adamrybinski/prolog-mcp
-//   cd prolog-mcp && npm install && npm run build
+// 1. Installer prolog-mcp UNE FOIS (aucun téléchargement ensuite : Prolog tourne en local) :
+//      git clone https://github.com/adamrybinski/prolog-mcp
+//      cd prolog-mcp && npm install && npm run build
+// 2. Remplacer le chemin ci-dessous par le chemin ABSOLU de prolog-mcp/dist/index.js.
 //
-// Le chemin de « args » est relatif au dossier de CSFlow : le dossier prolog-mcp doit être à côté de app.py
-// (sinon, mettez le chemin absolu de prolog-mcp/dist/index.js).
-// Les clés « disabled », « alwaysAllow » et « timeout » sont des réglages d'autres clients (Cline, Roo...) :
-// CSFlow les ignore (le délai se règle par étape avec « timeout: » dans le YAML).
+// « prolog2 » est une 2e instance identique : le workflow audit-regles y recharge les règles
+// après une auto-correction (prolog-mcp n'a pas d'outil de remise à zéro de sa session).
 // « service-public » n'est nécessaire que pour source: fiche.
 {
   "mcpServers": {
-    "prolog-mcp": {
+    "prolog": {
       "command": "node",
-      "args": ["prolog-mcp/dist/index.js"],
-      "disabled": false,
-      "alwaysAllow": ["loadProgram", "runPrologQuery", "saveSession", "loadSession"],
-      "timeout": 15
+      "args": ["/chemin/absolu/vers/prolog-mcp/dist/index.js"],
+      "cwd": "."
+    },
+    "prolog2": {
+      "command": "node",
+      "args": ["/chemin/absolu/vers/prolog-mcp/dist/index.js"],
+      "cwd": "."
     },
     "service-public": {
       "url": "https://mcp-service-public.nhaultcoeur.workers.dev/mcp"
